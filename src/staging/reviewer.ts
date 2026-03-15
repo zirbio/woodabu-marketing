@@ -1,3 +1,5 @@
+import { HEADLINE_MAX, DESCRIPTION_MAX } from '../utils/validators.js';
+
 export interface StagedItem {
   id: string;
   content: string;
@@ -22,8 +24,6 @@ export interface EmailSummaryInput {
   productCount: number;
   preheader: string;
 }
-
-import { HEADLINE_MAX, DESCRIPTION_MAX } from '../utils/validators.js';
 
 export function formatAdTable(items: string[], type: 'headline' | 'description'): string {
   const maxChars = type === 'headline' ? HEADLINE_MAX : DESCRIPTION_MAX;
