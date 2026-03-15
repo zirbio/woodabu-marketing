@@ -73,3 +73,23 @@ describe('MetaClient', () => {
     expect(insights).toBeDefined();
   });
 });
+
+describe('MetaClient error handling', () => {
+  const config = {
+    systemUserToken: 'sut_test',
+    tokenExpiry: '2026-12-31',
+    adAccountId: 'act_123',
+    pageId: 'page_456',
+    pageAccessToken: 'pat_test',
+  };
+
+  it('throws on 500 server error', async () => {
+    server.use(
+      http.get(`${API_BASE}/act_123/insights`, () =>
+        HttpResponse.json({ error: { message: 'Internal error' } }, { status: 500 }),
+      ),
+    );
+    const client = new MetaClient(config);
+    await expect(client.getAdInsights()).rejects.toThrow('500');
+  });
+});

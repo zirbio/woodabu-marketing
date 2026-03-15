@@ -57,3 +57,30 @@ describe('ShopifyClient', () => {
     expect(orders[0].totalPrice).toBe('899.00');
   });
 });
+
+describe('ShopifyClient error handling', () => {
+  const config = { storeDomain: STORE, accessToken: 'shpat_test' };
+
+  it('throws on HTTP error', async () => {
+    server.use(
+      http.post(`https://${STORE}/admin/api/2025-01/graphql.json`, () =>
+        HttpResponse.json({}, { status: 401 }),
+      ),
+    );
+    const client = new ShopifyClient(config);
+    await expect(client.getProducts()).rejects.toThrow('401');
+  });
+
+  it('handles GraphQL errors in 200 response', async () => {
+    server.use(
+      http.post(`https://${STORE}/admin/api/2025-01/graphql.json`, () =>
+        HttpResponse.json({
+          errors: [{ message: 'Access denied' }],
+          data: null,
+        }),
+      ),
+    );
+    const client = new ShopifyClient(config);
+    await expect(client.getProducts()).rejects.toThrow('Access denied');
+  });
+});
