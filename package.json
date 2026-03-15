@@ -24,6 +24,7 @@
     "typescript": "^5.9.3"
   },
   "devDependencies": {
+    "@types/mjml": "^4.7.4",
     "@types/node": "^25.5.0",
     "msw": "^2.12.10",
     "tsx": "^4.21.0",
