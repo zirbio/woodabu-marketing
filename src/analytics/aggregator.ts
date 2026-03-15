@@ -54,10 +54,14 @@ export interface AggregatorInput {
 }
 
 export function aggregateWeekly(input: AggregatorInput): WeeklyAggregate {
-  const googleSpend = input.googleAds.reduce((s, a) => s + a.spend, 0);
-  const googleConv = input.googleAds.reduce((s, a) => s + a.conversions, 0);
-  const metaSpend = input.meta.reduce((s, a) => s + a.spend, 0);
-  const metaConv = input.meta.reduce((s, a) => s + a.conversions, 0);
+  const { spend: googleSpend, conversions: googleConv } = input.googleAds.reduce(
+    (acc, a) => ({ spend: acc.spend + a.spend, conversions: acc.conversions + a.conversions }),
+    { spend: 0, conversions: 0 },
+  );
+  const { spend: metaSpend, conversions: metaConv } = input.meta.reduce(
+    (acc, a) => ({ spend: acc.spend + a.spend, conversions: acc.conversions + a.conversions }),
+    { spend: 0, conversions: 0 },
+  );
 
   const totalSpend = googleSpend + metaSpend;
   const totalConversions = googleConv + metaConv;
@@ -89,7 +93,7 @@ export function aggregateWeekly(input: AggregatorInput): WeeklyAggregate {
 
   const sorted = [...channels].sort((a, b) => (b.roas ?? -1) - (a.roas ?? -1));
   const topChannels = sorted.slice(0, 3);
-  const bottomChannels = [...channels].sort((a, b) => (a.roas ?? -1) - (b.roas ?? -1)).slice(0, 3);
+  const bottomChannels = sorted.slice().reverse().slice(0, 3);
 
   const recommendations: string[] = [];
   if (topChannels.length > 0 && topChannels[0].roas !== null && topChannels[0].roas > 2) {

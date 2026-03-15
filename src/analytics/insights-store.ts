@@ -28,9 +28,7 @@ function isInsightReport(obj: unknown): obj is InsightReport {
 
 export class InsightsStore {
   constructor(private readonly dir: string) {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
+    fs.mkdirSync(dir, { recursive: true });
   }
 
   save(report: InsightReport): void {

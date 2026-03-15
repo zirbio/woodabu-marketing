@@ -49,28 +49,12 @@ export class ShopifyClient {
     };
   }
 
-  private async query(graphql: string): Promise<Record<string, unknown>> {
+  private async query(graphql: string, variables?: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const body = variables ? { query: graphql, variables } : { query: graphql };
     const response = await fetch(this.endpoint, {
       method: 'POST',
       headers: this.headers,
-      body: JSON.stringify({ query: graphql }),
-    });
-    if (!response.ok) throw new Error(`Shopify API error: ${response.status}`);
-    const json = await response.json() as { data: Record<string, unknown> | null; errors?: Array<{ message: string }> };
-    if (json.errors && json.errors.length > 0) {
-      throw new Error(`Shopify GraphQL error: ${json.errors.map((e) => e.message).join(', ')}`);
-    }
-    if (!json.data) {
-      throw new Error('Shopify API returned null data');
-    }
-    return json.data;
-  }
-
-  private async queryWithVariables(graphql: string, variables: Record<string, unknown>): Promise<Record<string, unknown>> {
-    const response = await fetch(this.endpoint, {
-      method: 'POST',
-      headers: this.headers,
-      body: JSON.stringify({ query: graphql, variables }),
+      body: JSON.stringify(body),
     });
     if (!response.ok) throw new Error(`Shopify API error: ${response.status}`);
     const json = await response.json() as { data: Record<string, unknown> | null; errors?: Array<{ message: string }> };
@@ -157,7 +141,7 @@ export class ShopifyClient {
 
   async createEmailDraft(input: EmailDraftInput): Promise<EmailDraftResult> {
     try {
-      const data = await this.queryWithVariables(
+      const data = await this.query(
         `mutation CreateEmailDraft($subject: String!, $body: String!) {
           emailMarketingCampaignCreate(input: {
             subject: $subject

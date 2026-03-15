@@ -23,8 +23,10 @@ export interface EmailSummaryInput {
   preheader: string;
 }
 
+import { HEADLINE_MAX, DESCRIPTION_MAX } from '../utils/validators.js';
+
 export function formatAdTable(items: string[], type: 'headline' | 'description'): string {
-  const maxChars = type === 'headline' ? 30 : 90;
+  const maxChars = type === 'headline' ? HEADLINE_MAX : DESCRIPTION_MAX;
   const header = `| # | ${type === 'headline' ? 'Headline' : 'Description'} | Chars | Status |`;
   const separator = '|---|' + '-'.repeat(Math.max(type.length + 2, 12)) + '|-------|--------|';
 
