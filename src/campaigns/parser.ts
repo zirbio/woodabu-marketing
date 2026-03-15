@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { validateCampaignYaml, type CampaignDefinition } from './schema.js';
 
 export function parseCampaignString(content: string): CampaignDefinition {
-  const parsed = yaml.load(content);
+  const parsed = yaml.load(content, { schema: yaml.JSON_SCHEMA });
 
   if (parsed === null || typeof parsed !== 'object') {
     throw new Error('Campaign YAML must be a non-empty object');

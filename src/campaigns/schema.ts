@@ -57,7 +57,7 @@ const campaignJsonSchema = {
         name: { type: 'string', minLength: 1 },
         platform: { type: 'string', enum: ['meta', 'google_ads'] },
         objective: { type: 'string', minLength: 1 },
-        status: { type: 'string', enum: ['PAUSED'], default: 'PAUSED' },
+        status: { type: 'string', enum: ['PAUSED'] },
         campaign_id: { type: 'string', minLength: 1 },
       },
       additionalProperties: false,

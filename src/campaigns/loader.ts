@@ -63,7 +63,7 @@ export function formatCampaignPreview(definition: CampaignDefinition): string {
     `| # | Name | Headline | Chars | Primary Text | Chars | CTA |`,
     `|---|------|----------|-------|--------------|-------|-----|`,
     ...ads.map((ad, i) =>
-      `| ${i + 1} | ${ad.name} | ${ad.headline} | ${[...ad.headline].length} | ${ad.primary_text.slice(0, 40)}${ad.primary_text.length > 40 ? '...' : ''} | ${[...ad.primary_text].length} | ${ad.cta} |`
+      `| ${i + 1} | ${ad.name} | ${ad.headline} | ${[...ad.headline].length} | ${[...ad.primary_text].slice(0, 40).join('')}${[...ad.primary_text].length > 40 ? '...' : ''} | ${[...ad.primary_text].length} | ${ad.cta} |`
     ),
   ];
 
