@@ -1,12 +1,29 @@
+function redactUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    for (const key of ['access_token', 'token', 'key', 'secret']) {
+      if (parsed.searchParams.has(key)) {
+        parsed.searchParams.set(key, '[REDACTED]');
+      }
+    }
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
     public readonly statusCode: number | null,
-    public readonly url: string,
+    url: string,
   ) {
-    super(`${message} (status: ${statusCode}, url: ${url})`);
+    const safeUrl = redactUrl(url);
+    super(`${message} (status: ${statusCode}, url: ${safeUrl})`);
     this.name = 'ApiError';
+    this.url = safeUrl;
   }
+  public readonly url: string;
 }
 
 export interface RetryOptions {

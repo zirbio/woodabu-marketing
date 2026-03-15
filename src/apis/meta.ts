@@ -1,3 +1,5 @@
+import { fetchWithRetry } from '../utils/api-retry.js';
+
 const API_VERSION = 'v19.0';
 const BASE_URL = `https://graph.facebook.com/${API_VERSION}`;
 
@@ -36,9 +38,11 @@ export class MetaClient {
   constructor(private readonly config: MetaConfig) {}
 
   async getAdInsights(): Promise<AdInsight[]> {
-    const url = `${BASE_URL}/${this.config.adAccountId}/insights?access_token=${this.config.systemUserToken}&fields=campaign_id,campaign_name,impressions,clicks,ctr,spend,actions&date_preset=last_30d&level=campaign`;
+    const url = `${BASE_URL}/${this.config.adAccountId}/insights?fields=campaign_id,campaign_name,impressions,clicks,ctr,spend,actions&date_preset=last_30d&level=campaign`;
 
-    const response = await fetch(url);
+    const response = await fetchWithRetry(url, {
+      headers: { 'Authorization': `Bearer ${this.config.systemUserToken}` },
+    });
     if (!response.ok) throw new Error(`Meta API error: ${response.status}`);
     const json = await response.json() as { data: Record<string, unknown>[] };
 
@@ -59,11 +63,13 @@ export class MetaClient {
 
   async createAdDraft(input: CreateAdInput): Promise<{ adId: string }> {
     const url = `${BASE_URL}/${this.config.adAccountId}/ads`;
-    const response = await fetch(url, {
+    const response = await fetchWithRetry(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.config.systemUserToken}`,
+      },
       body: JSON.stringify({
-        access_token: this.config.systemUserToken,
         status: 'PAUSED',
         creative: {
           object_story_spec: {
@@ -86,16 +92,18 @@ export class MetaClient {
   async schedulePost(input: SchedulePostInput): Promise<{ postId: string }> {
     const url = `${BASE_URL}/${this.config.pageId}/feed`;
     const body: Record<string, unknown> = {
-      access_token: this.config.pageAccessToken,
       message: input.message,
       published: false,
       scheduled_publish_time: input.scheduledTime,
     };
     if (input.link) body.link = input.link;
 
-    const response = await fetch(url, {
+    const response = await fetchWithRetry(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.config.pageAccessToken}`,
+      },
       body: JSON.stringify(body),
     });
 
@@ -105,8 +113,10 @@ export class MetaClient {
   }
 
   async getPageInsights(): Promise<Record<string, unknown>> {
-    const url = `${BASE_URL}/${this.config.pageId}/insights?access_token=${this.config.pageAccessToken}&metric=page_impressions,page_engaged_users&period=week`;
-    const response = await fetch(url);
+    const url = `${BASE_URL}/${this.config.pageId}/insights?metric=page_impressions,page_engaged_users&period=week`;
+    const response = await fetchWithRetry(url, {
+      headers: { 'Authorization': `Bearer ${this.config.pageAccessToken}` },
+    });
     if (!response.ok) throw new Error(`Meta API error: ${response.status}`);
     return response.json();
   }

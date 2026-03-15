@@ -104,9 +104,9 @@ export class GoogleAdsClient {
       status: 'PAUSED',
       ad: {
         responsive_search_ad: {
-          headlines: input.headlines.map((text, i) => ({
+          headlines: input.headlines.map((text) => ({
             text,
-            pinned_field: i < 3 ? 'HEADLINE_1' : undefined,
+            // Don't pin — let Google Ads optimize automatically
           })),
           descriptions: input.descriptions.map((text) => ({ text })),
         },

@@ -4,3 +4,7 @@ data/insights/
 *.tmp
 node_modules/
 dist/
+coverage/
+*.log
+.DS_Store
+tsconfig.tsbuildinfo
