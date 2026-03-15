@@ -1,0 +1,6 @@
+.env
+credentials/
+data/insights/
+*.tmp
+node_modules/
+dist/
