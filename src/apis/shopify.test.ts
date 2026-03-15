@@ -149,3 +149,146 @@ describe('ShopifyClient email and segments', () => {
     expect(result.campaignId).toBeNull();
   });
 });
+
+describe('ShopifyClient — getProducts edge cases', () => {
+  const config = { storeDomain: STORE, accessToken: 'shpat_test' };
+
+  it('handles products with no images', async () => {
+    server.use(
+      http.post(`https://${STORE}/admin/api/2025-01/graphql.json`, () =>
+        HttpResponse.json({
+          data: {
+            products: {
+              edges: [{ node: { id: 'gid://shopify/Product/1', title: 'No Image', handle: 'no-image', description: 'desc', images: { edges: [] }, variants: { edges: [{ node: { price: '100.00' } }] } } }],
+            },
+          },
+        }),
+      ),
+    );
+    const client = new ShopifyClient(config);
+    const products = await client.getProducts();
+    expect(products[0].imageUrl).toBeNull();
+  });
+
+  it('handles products with no variants', async () => {
+    server.use(
+      http.post(`https://${STORE}/admin/api/2025-01/graphql.json`, () =>
+        HttpResponse.json({
+          data: {
+            products: {
+              edges: [{ node: { id: 'gid://shopify/Product/1', title: 'No Variant', handle: 'no-variant', description: 'desc', images: { edges: [{ node: { url: 'https://example.com/img.jpg' } }] }, variants: { edges: [] } } }],
+            },
+          },
+        }),
+      ),
+    );
+    const client = new ShopifyClient(config);
+    const products = await client.getProducts();
+    expect(products[0].price).toBe('0');
+  });
+
+  it('handles empty products response', async () => {
+    server.use(
+      http.post(`https://${STORE}/admin/api/2025-01/graphql.json`, () =>
+        HttpResponse.json({ data: { products: { edges: [] } } }),
+      ),
+    );
+    const client = new ShopifyClient(config);
+    const products = await client.getProducts();
+    expect(products).toEqual([]);
+  });
+});
+
+describe('ShopifyClient — getRecentOrders edge cases', () => {
+  const config = { storeDomain: STORE, accessToken: 'shpat_test' };
+
+  it('handles orders with empty line items', async () => {
+    server.use(
+      http.post(`https://${STORE}/admin/api/2025-01/graphql.json`, () =>
+        HttpResponse.json({
+          data: {
+            orders: {
+              edges: [{ node: { id: 'gid://shopify/Order/1', totalPriceSet: { shopMoney: { amount: '0.00' } }, lineItems: { edges: [] } } }],
+            },
+          },
+        }),
+      ),
+    );
+    const client = new ShopifyClient(config);
+    const orders = await client.getRecentOrders();
+    expect(orders[0].lineItems).toEqual([]);
+  });
+
+  it('handles null data response', async () => {
+    server.use(
+      http.post(`https://${STORE}/admin/api/2025-01/graphql.json`, () =>
+        HttpResponse.json({ data: null }),
+      ),
+    );
+    const client = new ShopifyClient(config);
+    await expect(client.getProducts()).rejects.toThrow('Shopify API returned null data');
+  });
+
+  it('handles multiple GraphQL errors', async () => {
+    server.use(
+      http.post(`https://${STORE}/admin/api/2025-01/graphql.json`, () =>
+        HttpResponse.json({
+          errors: [{ message: 'Error 1' }, { message: 'Error 2' }],
+          data: null,
+        }),
+      ),
+    );
+    const client = new ShopifyClient(config);
+    await expect(client.getProducts()).rejects.toThrow(/Error 1.*Error 2/);
+  });
+});
+
+describe('ShopifyClient — createEmailDraft edge cases', () => {
+  const config = { storeDomain: STORE, accessToken: 'shpat_test' };
+
+  it('returns fallback on network error', async () => {
+    server.use(
+      http.post(`https://${STORE}/admin/api/2025-01/graphql.json`, () =>
+        HttpResponse.error(),
+      ),
+    );
+    const client = new ShopifyClient(config);
+    const result = await client.createEmailDraft({ subject: 'Test', body: '<html></html>' });
+    expect(result.fallback).toBe(true);
+    expect(result.error).toBe('Email API unavailable');
+  });
+});
+
+describe('ShopifyClient — getCustomerSegments edge cases', () => {
+  const config = { storeDomain: STORE, accessToken: 'shpat_test' };
+
+  it('handles empty segments response', async () => {
+    server.use(
+      http.post(`https://${STORE}/admin/api/2025-01/graphql.json`, () =>
+        HttpResponse.json({ data: { segments: { edges: [] } } }),
+      ),
+    );
+    const client = new ShopifyClient(config);
+    const segments = await client.getCustomerSegments();
+    expect(segments).toEqual([]);
+  });
+
+  it('maps all segment fields correctly', async () => {
+    server.use(
+      http.post(`https://${STORE}/admin/api/2025-01/graphql.json`, () =>
+        HttpResponse.json({
+          data: {
+            segments: {
+              edges: [
+                { node: { id: 'gid://shopify/Segment/1', name: 'VIP', query: 'total_spent > 5000' } },
+              ],
+            },
+          },
+        }),
+      ),
+    );
+    const client = new ShopifyClient(config);
+    const segments = await client.getCustomerSegments();
+    expect(segments[0]).toEqual({ id: 'gid://shopify/Segment/1', name: 'VIP', query: 'total_spent > 5000' });
+  });
+});
