@@ -35,11 +35,11 @@ export class GA4Client {
     if (!response.rows) return [];
 
     const results = response.rows.map((row) => ({
-      channel: row.dimensionValues![0].value!,
-      date: row.dimensionValues![1].value!,
-      sessions: Number(row.metricValues![0].value),
-      conversions: Number(row.metricValues![1].value),
-      conversionRate: Number(row.metricValues![2].value),
+      channel: row.dimensionValues?.[0]?.value ?? 'Unknown',
+      date: row.dimensionValues?.[1]?.value ?? '',
+      sessions: Number(row.metricValues?.[0]?.value ?? 0),
+      conversions: Number(row.metricValues?.[1]?.value ?? 0),
+      conversionRate: Number(row.metricValues?.[2]?.value ?? 0),
     }));
 
     return results.sort((a, b) => b.sessions - a.sessions);

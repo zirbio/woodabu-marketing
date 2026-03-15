@@ -33,7 +33,7 @@ export interface ChannelSummary {
   name: string;
   spend: number;
   conversions: number;
-  roas: number;
+  roas: number | null;
 }
 
 export interface WeeklyAggregate {
@@ -54,10 +54,14 @@ export interface AggregatorInput {
 }
 
 export function aggregateWeekly(input: AggregatorInput): WeeklyAggregate {
-  const googleSpend = input.googleAds.reduce((s, a) => s + a.spend, 0);
-  const googleConv = input.googleAds.reduce((s, a) => s + a.conversions, 0);
-  const metaSpend = input.meta.reduce((s, a) => s + a.spend, 0);
-  const metaConv = input.meta.reduce((s, a) => s + a.conversions, 0);
+  const { spend: googleSpend, conversions: googleConv } = input.googleAds.reduce(
+    (acc, a) => ({ spend: acc.spend + a.spend, conversions: acc.conversions + a.conversions }),
+    { spend: 0, conversions: 0 },
+  );
+  const { spend: metaSpend, conversions: metaConv } = input.meta.reduce(
+    (acc, a) => ({ spend: acc.spend + a.spend, conversions: acc.conversions + a.conversions }),
+    { spend: 0, conversions: 0 },
+  );
 
   const totalSpend = googleSpend + metaSpend;
   const totalConversions = googleConv + metaConv;
@@ -84,15 +88,15 @@ export function aggregateWeekly(input: AggregatorInput): WeeklyAggregate {
 
   if (input.ga4.length > 0) {
     const ga4Conv = input.ga4.reduce((s, c) => s + c.conversions, 0);
-    channels.push({ name: 'organic', spend: 0, conversions: ga4Conv, roas: Infinity });
+    channels.push({ name: 'organic', spend: 0, conversions: ga4Conv, roas: null });
   }
 
-  const sorted = [...channels].sort((a, b) => b.roas - a.roas);
+  const sorted = [...channels].sort((a, b) => (b.roas ?? -1) - (a.roas ?? -1));
   const topChannels = sorted.slice(0, 3);
-  const bottomChannels = [...channels].sort((a, b) => a.roas - b.roas).slice(0, 3);
+  const bottomChannels = sorted.slice().reverse().slice(0, 3);
 
   const recommendations: string[] = [];
-  if (topChannels.length > 0 && topChannels[0].roas > 2) {
+  if (topChannels.length > 0 && topChannels[0].roas !== null && topChannels[0].roas > 2) {
     recommendations.push(`Increase budget on ${topChannels[0].name} — ROAS of ${topChannels[0].roas.toFixed(1)}`);
   }
 
@@ -116,7 +120,7 @@ export function formatWeeklySummary(data: WeeklyAggregate): string {
     `**Total conversions:** ${data.totalConversions}`,
     '',
     '## Top Channels (by ROAS)',
-    ...data.topChannels.map((c, i) => `${i + 1}. **${channelNames[c.name] ?? c.name}** — ${c.conversions} conversions, €${c.spend.toFixed(2)} spend, ROAS ${c.roas === Infinity ? '∞' : c.roas.toFixed(1)}`),
+    ...data.topChannels.map((c, i) => `${i + 1}. **${channelNames[c.name] ?? c.name}** — ${c.conversions} conversions, €${c.spend.toFixed(2)} spend, ROAS ${c.roas === null ? 'N/A (organic)' : c.roas.toFixed(1)}`),
     '',
     '## Recommendations',
     ...data.recommendations.map((r) => `- ${r}`),

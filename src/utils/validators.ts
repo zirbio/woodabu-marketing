@@ -14,58 +14,41 @@ export interface BatchValidationResult {
   errors: string[];
 }
 
-const HEADLINE_MAX = 30;
-const DESCRIPTION_MAX = 90;
+export const HEADLINE_MAX = 30;
+export const DESCRIPTION_MAX = 90;
 const WARN_THRESHOLD = 2;
 
-export function validateHeadline(text: string): ValidationResult {
+function validateLength(text: string, maxChars: number, fieldName: string): ValidationResult {
   const charCount = [...text].length;
 
   if (charCount === 0) {
-    return { valid: false, value: text, charCount: 0, error: 'Headline cannot be empty' };
+    return { valid: false, value: text, charCount: 0, error: `${fieldName} cannot be empty` };
   }
 
-  if (charCount > HEADLINE_MAX) {
+  if (charCount > maxChars) {
     return {
       valid: false,
       value: text,
       charCount,
-      error: `Headline exceeds ${HEADLINE_MAX} character limit (${charCount} chars)`,
+      error: `${fieldName} exceeds ${maxChars} character limit (${charCount} chars)`,
     };
   }
 
   const result: ValidationResult = { valid: true, value: text, charCount };
 
-  if (charCount >= HEADLINE_MAX - WARN_THRESHOLD) {
-    result.warning = `${charCount}/${HEADLINE_MAX} chars — close to limit`;
+  if (charCount >= maxChars - WARN_THRESHOLD) {
+    result.warning = `${charCount}/${maxChars} chars — close to limit`;
   }
 
   return result;
 }
 
+export function validateHeadline(text: string): ValidationResult {
+  return validateLength(text, HEADLINE_MAX, 'Headline');
+}
+
 export function validateDescription(text: string): ValidationResult {
-  const charCount = [...text].length;
-
-  if (charCount === 0) {
-    return { valid: false, value: text, charCount: 0, error: 'Description cannot be empty' };
-  }
-
-  if (charCount > DESCRIPTION_MAX) {
-    return {
-      valid: false,
-      value: text,
-      charCount,
-      error: `Description exceeds ${DESCRIPTION_MAX} character limit (${charCount} chars)`,
-    };
-  }
-
-  const result: ValidationResult = { valid: true, value: text, charCount };
-
-  if (charCount >= DESCRIPTION_MAX - WARN_THRESHOLD) {
-    result.warning = `${charCount}/${DESCRIPTION_MAX} chars — close to limit`;
-  }
-
-  return result;
+  return validateLength(text, DESCRIPTION_MAX, 'Description');
 }
 
 export function validateRsaBatch(

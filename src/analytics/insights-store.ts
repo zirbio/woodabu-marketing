@@ -15,16 +15,39 @@ export interface InsightReport {
 
 const MAX_REPORTS = 12;
 
+function isInsightReport(obj: unknown): obj is InsightReport {
+  if (typeof obj !== 'object' || obj === null) return false;
+  const record = obj as Record<string, unknown>;
+  return (
+    typeof record.date === 'string' &&
+    typeof record.type === 'string' &&
+    typeof record.channels === 'object' &&
+    Array.isArray(record.recommendations)
+  );
+}
+
 export class InsightsStore {
   constructor(private readonly dir: string) {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
+    fs.mkdirSync(dir, { recursive: true });
   }
 
   save(report: InsightReport): void {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(report.date)) {
+      throw new Error(`Invalid date format: ${report.date}. Expected YYYY-MM-DD.`);
+    }
+    const validTypes = ['weekly', 'channel', 'product', 'compare'];
+    if (!validTypes.includes(report.type)) {
+      throw new Error(`Invalid report type: ${report.type}`);
+    }
+
     const filename = `${report.date}-${report.type}.json`;
-    const filepath = path.join(this.dir, filename);
+    const filepath = path.resolve(this.dir, filename);
+
+    // Ensure resolved path is within the expected directory
+    if (!filepath.startsWith(path.resolve(this.dir))) {
+      throw new Error('Invalid file path: outside of insights directory');
+    }
+
     const tmpPath = `${filepath}.tmp`;
 
     fs.writeFileSync(tmpPath, JSON.stringify(report, null, 2), 'utf-8');
@@ -43,7 +66,11 @@ export class InsightsStore {
 
     return files.map((f) => {
       const content = fs.readFileSync(path.join(this.dir, f), 'utf-8');
-      return JSON.parse(content) as InsightReport;
+      const parsed: unknown = JSON.parse(content);
+      if (!isInsightReport(parsed)) {
+        throw new Error(`Invalid insight report format in file: ${f}`);
+      }
+      return parsed;
     });
   }
 

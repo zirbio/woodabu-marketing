@@ -14,6 +14,27 @@ export interface EmailInput {
   products: EmailProduct[];
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function validateUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return '#';
+    }
+    return escapeHtml(url);
+  } catch {
+    return '#';
+  }
+}
+
 export function compileMjml(mjmlContent: string): string {
   const result = mjml2html(mjmlContent, { validationLevel: 'strict' });
   if (result.errors.length > 0) {
@@ -28,10 +49,10 @@ function productCardsMjml(products: EmailProduct[]): string {
       (p) => `
     <mj-section>
       <mj-column>
-        <mj-image src="${p.imageUrl}" alt="${p.title}" width="300px" />
-        <mj-text font-size="18px" font-weight="bold">${p.title}</mj-text>
-        <mj-text font-size="16px" color="#8B6914">${p.price} &euro;</mj-text>
-        <mj-button href="${p.url}" background-color="#8B6914">Ver producto</mj-button>
+        <mj-image src="${validateUrl(p.imageUrl)}" alt="${escapeHtml(p.title)}" width="300px" />
+        <mj-text font-size="18px" font-weight="bold">${escapeHtml(p.title)}</mj-text>
+        <mj-text font-size="16px" color="#8B6914">${escapeHtml(p.price)} &euro;</mj-text>
+        <mj-button href="${validateUrl(p.url)}" background-color="#8B6914">Ver producto</mj-button>
       </mj-column>
     </mj-section>`
     )
@@ -42,7 +63,7 @@ export function generateEmailHtml(input: EmailInput): { html: string; subject: s
   const fullMjml = `
 <mjml>
   <mj-head>
-    <mj-preview>${input.preheader}</mj-preview>
+    <mj-preview>${escapeHtml(input.preheader)}</mj-preview>
     <mj-attributes>
       <mj-all font-family="Georgia, serif" />
       <mj-text font-size="16px" line-height="1.6" color="#333333" />

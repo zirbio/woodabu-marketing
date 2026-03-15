@@ -46,15 +46,16 @@ export function parsePeriod(input: string): DateRange {
     }
     case 'last-quarter': {
       const currentQuarter = Math.floor(now.getMonth() / 3);
-      const prevQuarterStart = new Date(now.getFullYear(), (currentQuarter - 1) * 3, 1);
-      const prevQuarterEnd = new Date(now.getFullYear(), currentQuarter * 3, 0);
+      let startMonth: number;
+      let startYear = now.getFullYear();
       if (currentQuarter === 0) {
-        prevQuarterStart.setFullYear(now.getFullYear() - 1);
-        prevQuarterStart.setMonth(9);
-        prevQuarterEnd.setFullYear(now.getFullYear() - 1);
-        prevQuarterEnd.setMonth(11);
-        prevQuarterEnd.setDate(31);
+        startMonth = 9; // October
+        startYear = now.getFullYear() - 1;
+      } else {
+        startMonth = (currentQuarter - 1) * 3;
       }
+      const prevQuarterStart = new Date(startYear, startMonth, 1);
+      const prevQuarterEnd = new Date(startYear, startMonth + 3, 0);
       return { start: formatDate(prevQuarterStart), end: formatDate(prevQuarterEnd) };
     }
     case 'last-year': {

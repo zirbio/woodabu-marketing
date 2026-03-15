@@ -49,11 +49,12 @@ export class ShopifyClient {
     };
   }
 
-  private async query(graphql: string): Promise<Record<string, unknown>> {
+  private async query(graphql: string, variables?: Record<string, unknown>): Promise<Record<string, unknown>> {
+    const body = variables ? { query: graphql, variables } : { query: graphql };
     const response = await fetch(this.endpoint, {
       method: 'POST',
       headers: this.headers,
-      body: JSON.stringify({ query: graphql }),
+      body: JSON.stringify(body),
     });
     if (!response.ok) throw new Error(`Shopify API error: ${response.status}`);
     const json = await response.json() as { data: Record<string, unknown> | null; errors?: Array<{ message: string }> };
@@ -67,8 +68,9 @@ export class ShopifyClient {
   }
 
   async getProducts(first = 50): Promise<Product[]> {
+    const safeFirst = Math.max(1, Math.min(250, Math.floor(first)));
     const data = await this.query(`{
-      products(first: ${first}) {
+      products(first: ${safeFirst}) {
         edges {
           node {
             id title handle description
@@ -95,8 +97,9 @@ export class ShopifyClient {
   }
 
   async getRecentOrders(first = 50): Promise<Order[]> {
+    const safeFirst = Math.max(1, Math.min(250, Math.floor(first)));
     const data = await this.query(`{
-      orders(first: ${first}, sortKey: CREATED_AT, reverse: true) {
+      orders(first: ${safeFirst}, sortKey: CREATED_AT, reverse: true) {
         edges {
           node {
             id
@@ -138,17 +141,18 @@ export class ShopifyClient {
 
   async createEmailDraft(input: EmailDraftInput): Promise<EmailDraftResult> {
     try {
-      const data = await this.query(`
-        mutation {
+      const data = await this.query(
+        `mutation CreateEmailDraft($subject: String!, $body: String!) {
           emailMarketingCampaignCreate(input: {
-            subject: "${input.subject.replace(/"/g, '\\"')}"
-            body: "${input.body.replace(/"/g, '\\"')}"
+            subject: $subject
+            body: $body
           }) {
             emailMarketingCampaign { id }
             userErrors { message field }
           }
-        }
-      `);
+        }`,
+        { subject: input.subject, body: input.body }
+      );
 
       const result = data.emailMarketingCampaignCreate as {
         emailMarketingCampaign: { id: string } | null;
