@@ -84,3 +84,68 @@ describe('ShopifyClient error handling', () => {
     await expect(client.getProducts()).rejects.toThrow('Access denied');
   });
 });
+
+describe('ShopifyClient email and segments', () => {
+  const config = { storeDomain: STORE, accessToken: 'shpat_test' };
+
+  it('fetches customer segments', async () => {
+    server.use(
+      http.post(`https://${STORE}/admin/api/2025-01/graphql.json`, () =>
+        HttpResponse.json({
+          data: {
+            segments: {
+              edges: [
+                { node: { id: 'gid://shopify/Segment/1', name: 'Repeat buyers', query: 'orders_count > 1' } },
+                { node: { id: 'gid://shopify/Segment/2', name: 'New customers', query: 'orders_count = 1' } },
+              ],
+            },
+          },
+        }),
+      ),
+    );
+    const client = new ShopifyClient(config);
+    const segments = await client.getCustomerSegments();
+    expect(segments).toHaveLength(2);
+    expect(segments[0].name).toBe('Repeat buyers');
+  });
+
+  it('creates email campaign draft', async () => {
+    server.use(
+      http.post(`https://${STORE}/admin/api/2025-01/graphql.json`, () =>
+        HttpResponse.json({
+          data: {
+            emailMarketingCampaignCreate: {
+              emailMarketingCampaign: { id: 'gid://shopify/EmailCampaign/1' },
+              userErrors: [],
+            },
+          },
+        }),
+      ),
+    );
+    const client = new ShopifyClient(config);
+    const result = await client.createEmailDraft({
+      subject: 'Nueva colección Zero Waste',
+      body: '<html><body>Content</body></html>',
+    });
+    expect(result.campaignId).toContain('EmailCampaign');
+  });
+
+  it('falls back gracefully if email mutation has userErrors', async () => {
+    server.use(
+      http.post(`https://${STORE}/admin/api/2025-01/graphql.json`, () =>
+        HttpResponse.json({
+          data: {
+            emailMarketingCampaignCreate: {
+              emailMarketingCampaign: null,
+              userErrors: [{ message: 'Feature not available', field: ['input'] }],
+            },
+          },
+        }),
+      ),
+    );
+    const client = new ShopifyClient(config);
+    const result = await client.createEmailDraft({ subject: 'Test', body: '<html></html>' });
+    expect(result.fallback).toBe(true);
+    expect(result.campaignId).toBeNull();
+  });
+});

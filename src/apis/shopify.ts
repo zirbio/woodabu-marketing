@@ -20,6 +20,23 @@ export interface Order {
   lineItems: Array<{ title: string; quantity: number }>;
 }
 
+export interface CustomerSegment {
+  id: string;
+  name: string;
+  query: string;
+}
+
+export interface EmailDraftInput {
+  subject: string;
+  body: string;
+}
+
+export interface EmailDraftResult {
+  campaignId: string | null;
+  fallback: boolean;
+  error?: string;
+}
+
 export class ShopifyClient {
   private readonly endpoint: string;
   private readonly headers: Record<string, string>;
@@ -100,5 +117,58 @@ export class ShopifyClient {
         lineItems: items.edges.map(({ node: li }) => ({ title: li.title, quantity: li.quantity })),
       };
     });
+  }
+
+  async getCustomerSegments(): Promise<CustomerSegment[]> {
+    const data = await this.query(`{
+      segments(first: 50) {
+        edges {
+          node { id name query }
+        }
+      }
+    }`);
+
+    const segments = data.segments as { edges: Array<{ node: { id: string; name: string; query: string } }> };
+    return segments.edges.map(({ node }) => ({
+      id: node.id,
+      name: node.name,
+      query: node.query,
+    }));
+  }
+
+  async createEmailDraft(input: EmailDraftInput): Promise<EmailDraftResult> {
+    try {
+      const data = await this.query(`
+        mutation {
+          emailMarketingCampaignCreate(input: {
+            subject: "${input.subject.replace(/"/g, '\\"')}"
+            body: "${input.body.replace(/"/g, '\\"')}"
+          }) {
+            emailMarketingCampaign { id }
+            userErrors { message field }
+          }
+        }
+      `);
+
+      const result = data.emailMarketingCampaignCreate as {
+        emailMarketingCampaign: { id: string } | null;
+        userErrors: Array<{ message: string; field: string[] }>;
+      };
+
+      if (result.userErrors.length > 0) {
+        return {
+          campaignId: null,
+          fallback: true,
+          error: result.userErrors.map((e) => e.message).join(', '),
+        };
+      }
+
+      return {
+        campaignId: result.emailMarketingCampaign?.id ?? null,
+        fallback: false,
+      };
+    } catch {
+      return { campaignId: null, fallback: true, error: 'Email API unavailable' };
+    }
   }
 }
