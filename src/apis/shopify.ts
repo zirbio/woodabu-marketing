@@ -1,0 +1,104 @@
+const API_VERSION = '2025-01';
+
+export interface ShopifyConfig {
+  storeDomain: string;
+  accessToken: string;
+}
+
+export interface Product {
+  id: string;
+  title: string;
+  handle: string;
+  description: string;
+  imageUrl: string | null;
+  price: string;
+}
+
+export interface Order {
+  id: string;
+  totalPrice: string;
+  lineItems: Array<{ title: string; quantity: number }>;
+}
+
+export class ShopifyClient {
+  private readonly endpoint: string;
+  private readonly headers: Record<string, string>;
+
+  constructor(private readonly config: ShopifyConfig) {
+    this.endpoint = `https://${config.storeDomain}/admin/api/${API_VERSION}/graphql.json`;
+    this.headers = {
+      'Content-Type': 'application/json',
+      'X-Shopify-Access-Token': config.accessToken,
+    };
+  }
+
+  private async query(graphql: string): Promise<Record<string, unknown>> {
+    const response = await fetch(this.endpoint, {
+      method: 'POST',
+      headers: this.headers,
+      body: JSON.stringify({ query: graphql }),
+    });
+    if (!response.ok) throw new Error(`Shopify API error: ${response.status}`);
+    const json = await response.json() as { data: Record<string, unknown> | null; errors?: Array<{ message: string }> };
+    if (json.errors && json.errors.length > 0) {
+      throw new Error(`Shopify GraphQL error: ${json.errors.map((e) => e.message).join(', ')}`);
+    }
+    if (!json.data) {
+      throw new Error('Shopify API returned null data');
+    }
+    return json.data;
+  }
+
+  async getProducts(first = 50): Promise<Product[]> {
+    const data = await this.query(`{
+      products(first: ${first}) {
+        edges {
+          node {
+            id title handle description
+            images(first: 1) { edges { node { url } } }
+            variants(first: 1) { edges { node { price } } }
+          }
+        }
+      }
+    }`);
+
+    const products = data.products as { edges: Array<{ node: Record<string, unknown> }> };
+    return products.edges.map(({ node }) => {
+      const images = node.images as { edges: Array<{ node: { url: string } }> };
+      const variants = node.variants as { edges: Array<{ node: { price: string } }> };
+      return {
+        id: String(node.id),
+        title: String(node.title),
+        handle: String(node.handle),
+        description: String(node.description),
+        imageUrl: images.edges[0]?.node.url ?? null,
+        price: variants.edges[0]?.node.price ?? '0',
+      };
+    });
+  }
+
+  async getRecentOrders(first = 50): Promise<Order[]> {
+    const data = await this.query(`{
+      orders(first: ${first}, sortKey: CREATED_AT, reverse: true) {
+        edges {
+          node {
+            id
+            totalPriceSet { shopMoney { amount } }
+            lineItems(first: 10) { edges { node { title quantity } } }
+          }
+        }
+      }
+    }`);
+
+    const orders = data.orders as { edges: Array<{ node: Record<string, unknown> }> };
+    return orders.edges.map(({ node }) => {
+      const priceSet = node.totalPriceSet as { shopMoney: { amount: string } };
+      const items = node.lineItems as { edges: Array<{ node: { title: string; quantity: number } }> };
+      return {
+        id: String(node.id),
+        totalPrice: priceSet.shopMoney.amount,
+        lineItems: items.edges.map(({ node: li }) => ({ title: li.title, quantity: li.quantity })),
+      };
+    });
+  }
+}
