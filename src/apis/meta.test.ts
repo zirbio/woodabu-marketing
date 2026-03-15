@@ -259,29 +259,33 @@ describe('MetaClient — createAdDraft details', () => {
   });
 
   it('sends correct page_id in object_story_spec', async () => {
-    let capturedBody: any = {};
+    let capturedBody: Record<string, unknown> = {};
     server.use(
       http.post(`${API_BASE}/act_123/ads`, async ({ request }) => {
-        capturedBody = await request.json();
+        capturedBody = await request.json() as Record<string, unknown>;
         return HttpResponse.json({ id: 'ad_1' });
       }),
     );
     const client = new MetaClient(config);
     await client.createAdDraft({ campaignId: 'c1', primaryText: 'text', headline: 'head', description: 'desc' });
-    expect(capturedBody.creative.object_story_spec.page_id).toBe('page_456');
+    const creative = capturedBody.creative as Record<string, unknown>;
+    const spec = creative.object_story_spec as Record<string, unknown>;
+    expect(spec.page_id).toBe('page_456');
   });
 
   it('sends all input fields in link_data', async () => {
-    let capturedBody: any = {};
+    let capturedBody: Record<string, unknown> = {};
     server.use(
       http.post(`${API_BASE}/act_123/ads`, async ({ request }) => {
-        capturedBody = await request.json();
+        capturedBody = await request.json() as Record<string, unknown>;
         return HttpResponse.json({ id: 'ad_1' });
       }),
     );
     const client = new MetaClient(config);
     await client.createAdDraft({ campaignId: 'c1', primaryText: 'Primary text', headline: 'Main headline', description: 'Full description' });
-    const linkData = capturedBody.creative.object_story_spec.link_data;
+    const creative = capturedBody.creative as Record<string, unknown>;
+    const spec = creative.object_story_spec as Record<string, unknown>;
+    const linkData = spec.link_data as Record<string, unknown>;
     expect(linkData.message).toBe('Primary text');
     expect(linkData.name).toBe('Main headline');
     expect(linkData.description).toBe('Full description');
@@ -298,10 +302,10 @@ describe('MetaClient — schedulePost details', () => {
   };
 
   it('sends published:false in request body', async () => {
-    let capturedBody: any = {};
+    let capturedBody: Record<string, unknown> = {};
     server.use(
       http.post(`${API_BASE}/page_456/feed`, async ({ request }) => {
-        capturedBody = await request.json();
+        capturedBody = await request.json() as Record<string, unknown>;
         return HttpResponse.json({ id: 'post_1' });
       }),
     );
@@ -311,10 +315,10 @@ describe('MetaClient — schedulePost details', () => {
   });
 
   it('includes link when provided in input', async () => {
-    let capturedBody: any = {};
+    let capturedBody: Record<string, unknown> = {};
     server.use(
       http.post(`${API_BASE}/page_456/feed`, async ({ request }) => {
-        capturedBody = await request.json();
+        capturedBody = await request.json() as Record<string, unknown>;
         return HttpResponse.json({ id: 'post_1' });
       }),
     );
@@ -324,10 +328,10 @@ describe('MetaClient — schedulePost details', () => {
   });
 
   it('omits link when not provided', async () => {
-    let capturedBody: any = {};
+    let capturedBody: Record<string, unknown> = {};
     server.use(
       http.post(`${API_BASE}/page_456/feed`, async ({ request }) => {
-        capturedBody = await request.json();
+        capturedBody = await request.json() as Record<string, unknown>;
         return HttpResponse.json({ id: 'post_1' });
       }),
     );
