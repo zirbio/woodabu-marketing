@@ -1,9 +1,9 @@
-import type { CampaignDefinition, CampaignAdSet, CampaignAd } from './schema.js';
+import type { CampaignDefinition, CampaignAdSet, CampaignAd, Platform } from './schema.js';
 import type { StagedItem } from '../staging/reviewer.js';
 
 export interface LoadResult {
   campaignName: string;
-  platform: 'meta' | 'google_ads';
+  platform: Platform;
   objective: string;
   campaignId: string | undefined;
   adSet: CampaignAdSet;
@@ -62,9 +62,13 @@ export function formatCampaignPreview(definition: CampaignDefinition): string {
     '',
     `| # | Name | Headline | Chars | Primary Text | Chars | CTA |`,
     `|---|------|----------|-------|--------------|-------|-----|`,
-    ...ads.map((ad, i) =>
-      `| ${i + 1} | ${ad.name} | ${ad.headline} | ${[...ad.headline].length} | ${[...ad.primary_text].slice(0, 40).join('')}${[...ad.primary_text].length > 40 ? '...' : ''} | ${[...ad.primary_text].length} | ${ad.cta} |`
-    ),
+    ...ads.map((ad, i) => {
+      const headlineChars = [...ad.headline];
+      const textChars = [...ad.primary_text];
+      const truncated = textChars.slice(0, 40).join('');
+      const ellipsis = textChars.length > 40 ? '...' : '';
+      return `| ${i + 1} | ${ad.name} | ${ad.headline} | ${headlineChars.length} | ${truncated}${ellipsis} | ${textChars.length} | ${ad.cta} |`;
+    }),
   ];
 
   return lines.join('\n');

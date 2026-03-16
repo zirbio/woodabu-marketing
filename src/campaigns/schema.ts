@@ -1,6 +1,11 @@
 import Ajv from 'ajv';
 
-// --- TypeScript interfaces ---
+// --- TypeScript types ---
+
+export type Platform = 'meta' | 'google_ads';
+
+export const VALID_CTAS = ['LEARN_MORE', 'SIGN_UP', 'DOWNLOAD', 'SHOP_NOW', 'BOOK_NOW', 'GET_OFFER', 'SUBSCRIBE', 'CONTACT_US', 'APPLY_NOW', 'WATCH_MORE'] as const;
+export type CtaType = typeof VALID_CTAS[number];
 
 export interface CampaignTargeting {
   age_min: number;
@@ -22,7 +27,7 @@ export interface CampaignAd {
   primary_text: string;
   headline: string;
   description: string;
-  cta: string;
+  cta: CtaType;
   link: string;
   image?: string;
 }
@@ -30,7 +35,7 @@ export interface CampaignAd {
 export interface CampaignDefinition {
   campaign: {
     name: string;
-    platform: 'meta' | 'google_ads';
+    platform: Platform;
     objective: string;
     status?: 'PAUSED';
     campaign_id?: string;
@@ -111,7 +116,7 @@ const campaignJsonSchema = {
           description: { type: 'string', minLength: 1 },
           cta: {
             type: 'string',
-            enum: ['LEARN_MORE', 'SIGN_UP', 'DOWNLOAD', 'SHOP_NOW', 'BOOK_NOW', 'GET_OFFER', 'SUBSCRIBE', 'CONTACT_US', 'APPLY_NOW', 'WATCH_MORE'],
+            enum: [...VALID_CTAS],
           },
           link: { type: 'string', pattern: '^https://' },
           image: { type: 'string' },
@@ -129,8 +134,7 @@ const ajv = new Ajv({ allErrors: true });
 const validate = ajv.compile(campaignJsonSchema);
 
 export function validateCampaignYaml(data: unknown): CampaignValidationResult {
-  const copy = structuredClone(data);
-  const valid = validate(copy);
+  const valid = validate(data);
 
   if (valid) {
     return { valid: true, errors: [] };
