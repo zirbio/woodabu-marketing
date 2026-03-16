@@ -30,8 +30,8 @@ Validate a YAML file without creating anything.
 
 6. **Create on platform** (requires `campaign_id` in YAML):
    - If `campaign_id` is missing, warn the user: "Add campaign_id to your YAML to create ads. You can find it in Meta Ads Manager or Google Ads console."
-   - **Meta**: For each approved ad, map fields to `CreateAdInput` (`campaign_id` → `campaignId`, `primary_text` → `primaryText`, `headline` → `headline`, `description` → `description`) and call `MetaClient.createAdDraft()` from `src/apis/meta.ts`. All ads are created as PAUSED.
-   - **Google Ads**: For ads with platform `google_ads`, map headline/descriptions to RSA format and call `GoogleAdsClient.createRsaAd()` from `src/apis/google-ads.ts`. All ads are created as PAUSED.
+   - **Meta** (`platform: meta`): For each approved ad, map fields to `CreateAdInput` (`campaign_id` → `campaignId`, `primary_text` → `primaryText`, `headline` → `headline`, `description` → `description`) and call `MetaClient.createAdDraft()` from `src/apis/meta.ts`. All ads are created as PAUSED.
+   - **Google Ads** (`platform: google_ads`): Not supported via YAML campaign definitions. YAML ads define a single headline/description per ad, but `GoogleAdsClient.createRsaAd()` requires 15 headlines + 4 descriptions + an `adGroupId`. Use the `/rsa` command instead for Google Ads RSA generation.
 
 7. **Report**: Show created ad IDs and remind user to review in the platform's ad manager before activating.
 

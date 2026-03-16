@@ -166,11 +166,11 @@ Guarda insights en `data/insights/` (máximo 12 reportes). Alias de periodos: `l
 ## Testing
 
 ```bash
-npm run test              # Ejecutar todos los tests (476 tests)
+npm run test              # Ejecutar todos los tests
 npm run test:unit         # Solo tests unitarios (excluye e2e)
 npm run test:e2e          # Solo tests de integración/e2e
 npm run test:watch        # Modo watch
-npm run test:coverage     # Con reporte de cobertura (97.8%)
+npm run test:coverage     # Con reporte de cobertura
 ```
 
 Los tests están colocados junto a los archivos fuente (`*.test.ts`) y usan [Vitest](https://vitest.dev/) con [MSW](https://mswjs.io/) para mocking HTTP.

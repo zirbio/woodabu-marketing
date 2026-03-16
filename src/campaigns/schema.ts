@@ -83,6 +83,7 @@ const campaignJsonSchema = {
             countries: { type: 'array', items: { type: 'string', minLength: 2, maxLength: 2 }, minItems: 1 },
             interests: {
               type: 'array',
+              minItems: 1,
               items: {
                 type: 'object',
                 required: ['id', 'name'],
