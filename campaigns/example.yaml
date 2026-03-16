@@ -1,0 +1,57 @@
+# Example: Woodabu Spring Sale campaign for Meta
+# Copy this file and customize for your campaign.
+# All campaigns are created as PAUSED — nothing goes live without manual activation.
+
+campaign:
+  name: Spring Sale 2026
+  platform: meta
+  objective: OUTCOME_SALES
+  # campaign_id: "123456789"  # Uncomment and set to your Meta campaign ID to create ads
+
+ad_set:
+  name: Spring - Eco Conscious Segment
+  daily_budget_cents: 2000  # €20/day
+  targeting:
+    age_min: 28
+    age_max: 55
+    genders: [0]  # 0=all, 1=male, 2=female
+    countries: ["ES"]
+    interests:
+      - id: "6003139266461"
+        name: Sustainable living
+      - id: "6003384544611"
+        name: Furniture
+      - id: "6003455156051"
+        name: Interior design
+    platforms: [facebook, instagram]
+
+ads:
+  - name: Spring Eco - Artisan Story
+    primary_text: >-
+      Cada mueble Woodabu nace en nuestro taller de Madrid.
+      Madera maciza, técnicas tradicionales y cero residuos.
+      Piezas que duran toda la vida.
+    headline: Artesanía sostenible
+    description: Hecho a mano en Madrid
+    cta: SHOP_NOW
+    link: https://woodabu.com/colecciones/zero-waste
+
+  - name: Spring Eco - Lifetime Warranty
+    primary_text: >-
+      ¿Sabías que cada pieza Woodabu tiene garantía de por vida?
+      Madera maciza de roble y castaño, sin materiales artificiales.
+      Muebles que mejoran con el tiempo.
+    headline: Garantía de por vida
+    description: Madera maciza real
+    cta: LEARN_MORE
+    link: https://woodabu.com/garantia
+
+  - name: Spring Eco - Zero Waste
+    primary_text: >-
+      Nuestra colección Zero Waste transforma restos de madera
+      en muebles únicos. Cada pieza es irrepetible, sostenible
+      y hecha con propósito.
+    headline: Colección Zero Waste
+    description: Piezas únicas e irrepetibles
+    cta: SHOP_NOW
+    link: https://woodabu.com/colecciones/zero-waste

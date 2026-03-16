@@ -47,6 +47,19 @@ Supporting directories:
 - `data/insights/` — Stored analytics insight reports (JSON, gitignored)
 - `credentials/` — OAuth key files (gitignored)
 
+### MCP Servers (Read-Only)
+
+Two external MCP servers are configured in `.claude/settings.local.json` (gitignored) for ad-hoc analytics queries:
+
+- **meta-ads-mcp** (pipeboard-co): Query Meta campaign insights, breakdowns by age/gender/placement. Read-only — all writes go through `src/apis/meta.ts`.
+- **google-ads-mcp** (Google official): Execute GAQL queries for Google Ads diagnostics. Read-only.
+
+To set up: copy token values from `.env` into `.claude/settings.local.json`. See `.env.example` for mapping.
+
+### Campaign Definitions
+
+YAML files in `campaigns/` define ad campaigns declaratively. Schema validated at load time. Flow: `campaigns/*.yaml` → `src/campaigns/parser.ts` → staging review → API creation (PAUSED).
+
 ## Key Patterns
 
 **API clients** follow a consistent pattern: config interface → typed response interfaces → class with read methods (fetch data) and write methods (create as PAUSED/DRAFT). Meta and Google Ads use `fetchWithRetry` for automatic retry with exponential backoff.
