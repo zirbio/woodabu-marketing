@@ -22,12 +22,6 @@ export interface AdPerformance {
   };
 }
 
-export interface CreateRsaInput {
-  adGroupId: string;
-  headlines: string[];
-  descriptions: string[];
-}
-
 interface ReportRow {
   ad_group_ad: {
     ad: {
@@ -52,7 +46,6 @@ interface ReportRow {
 
 export class GoogleAdsClient {
   private readonly customer: ReturnType<InstanceType<typeof GoogleAdsApi>['Customer']>;
-  private readonly customerId: string;
 
   constructor(config: GoogleAdsConfig) {
     const api = new GoogleAdsApi({
@@ -61,7 +54,6 @@ export class GoogleAdsClient {
       developer_token: config.developerToken,
     });
 
-    this.customerId = config.customerId;
     this.customer = api.Customer({
       customer_id: config.customerId,
       refresh_token: config.refreshToken,
@@ -96,49 +88,6 @@ export class GoogleAdsClient {
         conversions: row.metrics.conversions,
       },
     }));
-  }
-
-  async createRsaAd(input: CreateRsaInput): Promise<{ resourceName: string }> {
-    const adGroupAd = {
-      ad_group: `customers/${this.customerId}/adGroups/${input.adGroupId}`,
-      status: 'PAUSED',
-      ad: {
-        responsive_search_ad: {
-          headlines: input.headlines.map((text) => ({
-            text,
-            // Don't pin — let Google Ads optimize automatically
-          })),
-          descriptions: input.descriptions.map((text) => ({ text })),
-        },
-      },
-    };
-
-    const response = await this.customer.mutateResources([
-      {
-        entity: 'ad_group_ad',
-        operation: 'create',
-        resource: adGroupAd,
-        ...adGroupAd,
-      },
-    ]);
-
-    const mutateResponse = response as unknown as {
-      results?: Array<{ resource_name: string }>;
-      mutate_operation_responses?: Array<{ ad_group_ad_result?: { resource_name: string } }>;
-    };
-
-    if (mutateResponse.results && mutateResponse.results.length > 0) {
-      return { resourceName: mutateResponse.results[0].resource_name };
-    }
-
-    if (mutateResponse.mutate_operation_responses && mutateResponse.mutate_operation_responses.length > 0) {
-      const adGroupAdResult = mutateResponse.mutate_operation_responses[0].ad_group_ad_result;
-      if (adGroupAdResult) {
-        return { resourceName: adGroupAdResult.resource_name };
-      }
-    }
-
-    throw new Error('Unexpected mutate response format');
   }
 
   static rankPerformers(ads: AdPerformance[]): { top: AdPerformance[]; bottom: AdPerformance[] } {

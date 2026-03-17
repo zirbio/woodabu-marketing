@@ -85,7 +85,7 @@ describe('ShopifyClient error handling', () => {
   });
 });
 
-describe('ShopifyClient email and segments', () => {
+describe('ShopifyClient segments', () => {
   const config = { storeDomain: STORE, accessToken: 'shpat_test' };
 
   it('fetches customer segments', async () => {
@@ -109,45 +109,6 @@ describe('ShopifyClient email and segments', () => {
     expect(segments[0].name).toBe('Repeat buyers');
   });
 
-  it('creates email campaign draft', async () => {
-    server.use(
-      http.post(`https://${STORE}/admin/api/2025-01/graphql.json`, () =>
-        HttpResponse.json({
-          data: {
-            emailMarketingCampaignCreate: {
-              emailMarketingCampaign: { id: 'gid://shopify/EmailCampaign/1' },
-              userErrors: [],
-            },
-          },
-        }),
-      ),
-    );
-    const client = new ShopifyClient(config);
-    const result = await client.createEmailDraft({
-      subject: 'Nueva colección Zero Waste',
-      body: '<html><body>Content</body></html>',
-    });
-    expect(result.campaignId).toContain('EmailCampaign');
-  });
-
-  it('falls back gracefully if email mutation has userErrors', async () => {
-    server.use(
-      http.post(`https://${STORE}/admin/api/2025-01/graphql.json`, () =>
-        HttpResponse.json({
-          data: {
-            emailMarketingCampaignCreate: {
-              emailMarketingCampaign: null,
-              userErrors: [{ message: 'Feature not available', field: ['input'] }],
-            },
-          },
-        }),
-      ),
-    );
-    const client = new ShopifyClient(config);
-    const result = await client.createEmailDraft({ subject: 'Test', body: '<html></html>' });
-    expect(result.fallback).toBe(true);
-    expect(result.campaignId).toBeNull();
-  });
 });
 
 describe('ShopifyClient — getProducts edge cases', () => {
@@ -240,22 +201,6 @@ describe('ShopifyClient — getRecentOrders edge cases', () => {
     );
     const client = new ShopifyClient(config);
     await expect(client.getProducts()).rejects.toThrow(/Error 1.*Error 2/);
-  });
-});
-
-describe('ShopifyClient — createEmailDraft edge cases', () => {
-  const config = { storeDomain: STORE, accessToken: 'shpat_test' };
-
-  it('returns fallback on network error', async () => {
-    server.use(
-      http.post(`https://${STORE}/admin/api/2025-01/graphql.json`, () =>
-        HttpResponse.error(),
-      ),
-    );
-    const client = new ShopifyClient(config);
-    const result = await client.createEmailDraft({ subject: 'Test', body: '<html></html>' });
-    expect(result.fallback).toBe(true);
-    expect(result.error).toBe('Email API unavailable');
   });
 });
 

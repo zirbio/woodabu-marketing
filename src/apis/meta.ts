@@ -21,19 +21,6 @@ export interface AdInsight {
   conversions: number;
 }
 
-export interface CreateAdInput {
-  campaignId: string;
-  primaryText: string;
-  headline: string;
-  description: string;
-}
-
-export interface SchedulePostInput {
-  message: string;
-  scheduledTime: number;
-  link?: string;
-}
-
 export class MetaClient {
   constructor(private readonly config: MetaConfig) {}
 
@@ -59,57 +46,6 @@ export class MetaClient {
         conversions: purchases ? Number(purchases.value) : 0,
       };
     });
-  }
-
-  async createAdDraft(input: CreateAdInput): Promise<{ adId: string }> {
-    const url = `${BASE_URL}/${this.config.adAccountId}/ads`;
-    const response = await fetchWithRetry(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.config.systemUserToken}`,
-      },
-      body: JSON.stringify({
-        status: 'PAUSED',
-        creative: {
-          object_story_spec: {
-            page_id: this.config.pageId,
-            link_data: {
-              message: input.primaryText,
-              name: input.headline,
-              description: input.description,
-            },
-          },
-        },
-      }),
-    });
-
-    if (!response.ok) throw new Error(`Meta API error: ${response.status}`);
-    const json = await response.json() as { id: string };
-    return { adId: json.id };
-  }
-
-  async schedulePost(input: SchedulePostInput): Promise<{ postId: string }> {
-    const url = `${BASE_URL}/${this.config.pageId}/feed`;
-    const body: Record<string, unknown> = {
-      message: input.message,
-      published: false,
-      scheduled_publish_time: input.scheduledTime,
-    };
-    if (input.link) body.link = input.link;
-
-    const response = await fetchWithRetry(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.config.pageAccessToken}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) throw new Error(`Meta API error: ${response.status}`);
-    const json = await response.json() as { id: string };
-    return { postId: json.id };
   }
 
   async getPageInsights(): Promise<Record<string, unknown>> {

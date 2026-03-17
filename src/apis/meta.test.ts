@@ -13,12 +13,6 @@ const server = setupServer(
       ],
     }),
   ),
-  http.post(`${API_BASE}/act_123/ads`, () =>
-    HttpResponse.json({ id: 'ad_789' }),
-  ),
-  http.post(`${API_BASE}/page_456/feed`, () =>
-    HttpResponse.json({ id: 'post_999' }),
-  ),
   http.get(`${API_BASE}/page_456/insights`, () =>
     HttpResponse.json({
       data: [{ name: 'page_impressions', values: [{ value: 10000 }] }],
@@ -45,26 +39,6 @@ describe('MetaClient', () => {
     expect(insights).toHaveLength(1);
     expect(insights[0].campaignName).toBe('Spring');
     expect(insights[0].ctr).toBe(0.05);
-  });
-
-  it('creates ad as draft', async () => {
-    const client = new MetaClient(config);
-    const result = await client.createAdDraft({
-      campaignId: 'c1',
-      primaryText: 'Test primary',
-      headline: 'Test headline',
-      description: 'Test desc',
-    });
-    expect(result.adId).toBe('ad_789');
-  });
-
-  it('schedules a page post', async () => {
-    const client = new MetaClient(config);
-    const result = await client.schedulePost({
-      message: 'Test post',
-      scheduledTime: Math.floor(Date.now() / 1000) + 3600,
-    });
-    expect(result.postId).toBe('post_999');
   });
 
   it('fetches page insights', async () => {
@@ -236,120 +210,3 @@ describe('MetaClient — getAdInsights edge cases', () => {
   });
 });
 
-describe('MetaClient — createAdDraft details', () => {
-  const config = {
-    systemUserToken: 'sut_test',
-    tokenExpiry: '2026-12-31',
-    adAccountId: 'act_123',
-    pageId: 'page_456',
-    pageAccessToken: 'pat_test',
-  };
-
-  it('sends PAUSED status in request body', async () => {
-    let capturedBody: Record<string, unknown> = {};
-    server.use(
-      http.post(`${API_BASE}/act_123/ads`, async ({ request }) => {
-        capturedBody = await request.json() as Record<string, unknown>;
-        return HttpResponse.json({ id: 'ad_1' });
-      }),
-    );
-    const client = new MetaClient(config);
-    await client.createAdDraft({ campaignId: 'c1', primaryText: 'text', headline: 'head', description: 'desc' });
-    expect(capturedBody.status).toBe('PAUSED');
-  });
-
-  it('sends correct page_id in object_story_spec', async () => {
-    let capturedBody: Record<string, unknown> = {};
-    server.use(
-      http.post(`${API_BASE}/act_123/ads`, async ({ request }) => {
-        capturedBody = await request.json() as Record<string, unknown>;
-        return HttpResponse.json({ id: 'ad_1' });
-      }),
-    );
-    const client = new MetaClient(config);
-    await client.createAdDraft({ campaignId: 'c1', primaryText: 'text', headline: 'head', description: 'desc' });
-    const creative = capturedBody.creative as Record<string, unknown>;
-    const spec = creative.object_story_spec as Record<string, unknown>;
-    expect(spec.page_id).toBe('page_456');
-  });
-
-  it('sends all input fields in link_data', async () => {
-    let capturedBody: Record<string, unknown> = {};
-    server.use(
-      http.post(`${API_BASE}/act_123/ads`, async ({ request }) => {
-        capturedBody = await request.json() as Record<string, unknown>;
-        return HttpResponse.json({ id: 'ad_1' });
-      }),
-    );
-    const client = new MetaClient(config);
-    await client.createAdDraft({ campaignId: 'c1', primaryText: 'Primary text', headline: 'Main headline', description: 'Full description' });
-    const creative = capturedBody.creative as Record<string, unknown>;
-    const spec = creative.object_story_spec as Record<string, unknown>;
-    const linkData = spec.link_data as Record<string, unknown>;
-    expect(linkData.message).toBe('Primary text');
-    expect(linkData.name).toBe('Main headline');
-    expect(linkData.description).toBe('Full description');
-  });
-});
-
-describe('MetaClient — schedulePost details', () => {
-  const config = {
-    systemUserToken: 'sut_test',
-    tokenExpiry: '2026-12-31',
-    adAccountId: 'act_123',
-    pageId: 'page_456',
-    pageAccessToken: 'pat_test',
-  };
-
-  it('sends published:false in request body', async () => {
-    let capturedBody: Record<string, unknown> = {};
-    server.use(
-      http.post(`${API_BASE}/page_456/feed`, async ({ request }) => {
-        capturedBody = await request.json() as Record<string, unknown>;
-        return HttpResponse.json({ id: 'post_1' });
-      }),
-    );
-    const client = new MetaClient(config);
-    await client.schedulePost({ message: 'Test', scheduledTime: 12345 });
-    expect(capturedBody.published).toBe(false);
-  });
-
-  it('includes link when provided in input', async () => {
-    let capturedBody: Record<string, unknown> = {};
-    server.use(
-      http.post(`${API_BASE}/page_456/feed`, async ({ request }) => {
-        capturedBody = await request.json() as Record<string, unknown>;
-        return HttpResponse.json({ id: 'post_1' });
-      }),
-    );
-    const client = new MetaClient(config);
-    await client.schedulePost({ message: 'Test', scheduledTime: 12345, link: 'https://woodabu.com/mesa' });
-    expect(capturedBody.link).toBe('https://woodabu.com/mesa');
-  });
-
-  it('omits link when not provided', async () => {
-    let capturedBody: Record<string, unknown> = {};
-    server.use(
-      http.post(`${API_BASE}/page_456/feed`, async ({ request }) => {
-        capturedBody = await request.json() as Record<string, unknown>;
-        return HttpResponse.json({ id: 'post_1' });
-      }),
-    );
-    const client = new MetaClient(config);
-    await client.schedulePost({ message: 'Test', scheduledTime: 12345 });
-    expect(capturedBody).not.toHaveProperty('link');
-  });
-
-  it('uses pageAccessToken not systemUserToken for page posts', async () => {
-    let capturedAuth = '';
-    server.use(
-      http.post(`${API_BASE}/page_456/feed`, ({ request }) => {
-        capturedAuth = request.headers.get('Authorization') ?? '';
-        return HttpResponse.json({ id: 'post_1' });
-      }),
-    );
-    const client = new MetaClient(config);
-    await client.schedulePost({ message: 'Test', scheduledTime: 12345 });
-    expect(capturedAuth).toBe('Bearer pat_test');
-  });
-});
