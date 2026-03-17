@@ -20,7 +20,9 @@ Remove these methods and their associated types/interfaces entirely (not comment
 | `src/apis/shopify.ts` | `createEmailDraft()` | `getProducts()`, `getRecentOrders()`, `getCustomerSegments()` |
 | `src/apis/ga4.ts` | Nothing — already read-only | All methods remain |
 
-Types to remove: `CreateAdInput`, `SchedulePostInput`, `CreateRsaInput`, `EmailDraftInput`, `EmailDraftResult`, `StagedItem`, and any other interfaces/types exclusively used by write methods. Note: some write methods return inline types (e.g., `Promise<{ adId: string }>`) — these are removed with the methods themselves.
+Types to remove: `CreateAdInput`, `SchedulePostInput`, `CreateRsaInput`, `EmailDraftInput`, `EmailDraftResult`, and any other interfaces/types exclusively used by write methods. Note: some write methods return inline types (e.g., `Promise<{ adId: string }>`) — these are removed with the methods themselves.
+
+**`StagedItem` is retained** — it is used by `src/campaigns/loader.ts` (which remains unchanged per Section 6). `ReviewDecision` is removed since it is only used by the deleted `applyDecisions()`.
 
 `InsightsStore.save()` is retained — it writes locally, not to external platforms.
 
@@ -105,10 +107,10 @@ Four new modules in `src/analytics/`, all implemented in pure TypeScript with no
 interface PeriodMetrics {
   period: string;        // YYYY-MM-DD (start of period)
   channel: string;       // 'meta' | 'google_ads' | 'ga4' | 'shopify'
-  spend: number;
-  conversions: number;
-  sessions: number;
-  roas: number;
+  spend: number | null;       // null for channels without spend (ga4, shopify)
+  conversions: number | null; // null if not applicable
+  sessions: number | null;    // null for channels without sessions (meta, shopify)
+  roas: number | null;        // null for channels without spend
 }
 
 // Added to InsightReport:
@@ -117,6 +119,8 @@ interface InsightReport {
   metrics: PeriodMetrics[];
 }
 ```
+
+Analytics modules must skip `null` values when computing statistics. For correlations and trends, only non-null metric pairs are considered. Zero-variance vectors (all values identical) must be skipped by the correlation module to avoid division by zero.
 
 This is a prerequisite — `InsightsStore.save()` must start storing these raw metrics alongside existing data, and `/analytics` must populate them from the API responses before saving.
 
