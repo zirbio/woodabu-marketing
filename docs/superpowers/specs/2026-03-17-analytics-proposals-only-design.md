@@ -20,7 +20,7 @@ Remove these methods and their associated types/interfaces entirely (not comment
 | `src/apis/shopify.ts` | `createEmailDraft()` | `getProducts()`, `getRecentOrders()`, `getCustomerSegments()` |
 | `src/apis/ga4.ts` | Nothing — already read-only | All methods remain |
 
-Types to remove: `AdDraftInput`, `AdDraftResult`, `PostInput`, `PostResult`, `EmailDraftInput`, `EmailDraftResult`, and any other interfaces exclusively used by write methods.
+Types to remove: `CreateAdInput`, `SchedulePostInput`, `CreateRsaInput`, `EmailDraftInput`, `EmailDraftResult`, `StagedItem`, and any other interfaces/types exclusively used by write methods. Note: some write methods return inline types (e.g., `Promise<{ adId: string }>`) — these are removed with the methods themselves.
 
 `InsightsStore.save()` is retained — it writes locally, not to external platforms.
 
@@ -43,6 +43,7 @@ All commands stop at "show + save" instead of "create on platform":
 - `applyDecisions()` is removed — there are no decisions to apply since nothing executes
 - `formatAdTable()`, `formatPostPreview()`, `formatEmailSummary()` remain as pure formatters
 - The `ReviewDecision` type and its actions (`approve`, `edit`, `skip`, `regenerate`) are removed
+- All test files that import `applyDecisions` or `ReviewDecision` must be updated: `src/staging/reviewer.test.ts`, `src/campaigns/integration.test.ts`, and E2E flow tests
 
 `src/staging/html-preview.ts`: No changes — still compiles MJML to HTML for the exported file.
 
@@ -61,14 +62,18 @@ function saveOutput(
   type: 'rsa' | 'meta-ads' | 'social' | 'email' | 'campaign' | 'analytics',
   name: string,
   content: string,
-  format?: 'md' | 'html'
+  format: 'md' | 'html' = 'md'
 ): ExportResult;
 ```
 
 Behavior:
 - Creates `output/YYYY-MM-DD/` directory if it doesn't exist
 - Writes file with slugified name: `{type}-{name}.{format}`
+- Slugification: lowercase, replace spaces/underscores with hyphens, strip accents (ñ→n, á→a), remove non-alphanumeric characters except hyphens
 - Returns the path for display in terminal
+- Default format is `'md'`
+- On filesystem errors (permission denied, disk full): throws with descriptive error message — do not silently fail
+- For `/email`, the command calls `saveOutput` twice: once with `format='md'` (copy text) and once with `format='html'` (compiled MJML)
 - `output/` is added to `.gitignore`
 
 Output file structure:
@@ -94,6 +99,27 @@ Each Markdown file includes:
 
 Four new modules in `src/analytics/`, all implemented in pure TypeScript with no external dependencies:
 
+**Data source:** All four modules consume numeric time-series vectors. The current `InsightReport` interface stores channel-level aggregates but not raw per-period metric values. The `InsightReport` interface must be extended with a `metrics` field:
+
+```typescript
+interface PeriodMetrics {
+  period: string;        // YYYY-MM-DD (start of period)
+  channel: string;       // 'meta' | 'google_ads' | 'ga4' | 'shopify'
+  spend: number;
+  conversions: number;
+  sessions: number;
+  roas: number;
+}
+
+// Added to InsightReport:
+interface InsightReport {
+  // ... existing fields ...
+  metrics: PeriodMetrics[];
+}
+```
+
+This is a prerequisite — `InsightsStore.save()` must start storing these raw metrics alongside existing data, and `/analytics` must populate them from the API responses before saving.
+
 #### 5.1 `trends.ts` — Trend Detection
 - Calculates direction (rising/falling/stable) per metric using simple moving average
 - Feeds from `InsightsStore` historical data (up to 12 periods)
@@ -107,7 +133,7 @@ Four new modules in `src/analytics/`, all implemented in pure TypeScript with no
 #### 5.3 `correlations.ts` — Cross-Channel Correlation
 - Pearson correlation coefficient between metric pairs across channels
 - Example: Meta spend vs GA4 organic sessions
-- Requires minimum 4-5 periods of data to be meaningful
+- Runtime guard: requires minimum 5 periods of data. If fewer than 5 are available, returns empty array (no correlations computed)
 - Output: `Correlation[]` with metric pair, coefficient, interpretation text
 - Only surfaces correlations with |r| > 0.7
 
@@ -119,16 +145,30 @@ Four new modules in `src/analytics/`, all implemented in pure TypeScript with no
 
 All modules are invoked from `/analytics` and output is saved to `output/YYYY-MM-DD/analytics-*.md`.
 
+**Dual save:** `/analytics` continues saving to `InsightsStore` (`data/insights/`) for historical data accumulation AND exports the human-readable report to `output/YYYY-MM-DD/`. The insights store is the data backend; the output files are the human-facing reports.
+
 ### 6. Campaign YAML — Retained As-Is
 
 `campaigns/*.yaml` files, `src/campaigns/schema.ts`, `parser.ts`, `loader.ts` all remain unchanged. They serve as a planning/documentation tool. The `/campaign` command loads and validates YAML but exports a preview file instead of creating ads via API.
 
 ### 7. Tests
 
-- **Delete:** Tests for removed write methods (`createAdDraft`, `schedulePost`, `createRsaAd`, `createEmailDraft`)
-- **Adapt:** E2E flow tests that end in API calls → end in file export verification
+- **Delete write-method tests in:**
+  - `src/apis/meta.test.ts` — remove tests for `createAdDraft`, `schedulePost`
+  - `src/apis/google-ads.test.ts` — remove tests for `createRsaAd` (if present, may be named differently)
+  - `src/apis/shopify.test.ts` — remove tests for `createEmailDraft`
+  - `src/__tests__/e2e/contract-api-shapes.test.ts` — remove contract tests for write method return shapes (`createAdDraft returns { adId }`, `schedulePost returns { postId }`, `createRsaAd returns { resourceName }`, `createEmailDraft returns EmailDraftResult`)
+- **Delete/update reviewer tests:**
+  - `src/staging/reviewer.test.ts` — remove all `applyDecisions` test cases
+  - `src/campaigns/integration.test.ts` — remove imports/usage of `applyDecisions` and `ReviewDecision`
+- **Adapt:** E2E flow tests (`flow-meta-ads.test.ts`, `flow-rsa-generation.test.ts`, `flow-email-campaign.test.ts`, `flow-social-posts.test.ts`) — end in file export verification instead of API calls
+- **Clean up test helpers:**
+  - Remove write-related MSW mocks (e.g., `googleAdsMutateMock`) and fixtures (e.g., `metaCreateAdResponse`, `metaSchedulePostResponse`, `googleAdsMutateResponse`, `shopifyEmailSuccessResponse`, `shopifyEmailUserErrorResponse`) from `helpers/msw-server.js` and `helpers/fixtures.js`
+  - Remove MSW default handler routes for write endpoints: `http.post('.../:accountId/ads', ...)`, `http.post('.../:pageId/feed', ...)`, and the Shopify `emailMarketingCampaignCreate` mutation handler from the `defaultHandlers` array in `helpers/msw-server.ts`
+- **Clean up dead mocks in other tests:**
+  - `flow-analytics-weekly.test.ts` — remove `mutateResources` mock from `vi.mock('google-ads-api')` setup
 - **Add:** Unit tests for `exporter.ts`, `trends.ts`, `anomalies.ts`, `correlations.ts`, `projections.ts`
-- **Keep:** Security tests, resilience tests, character validation tests
+- **Keep:** Security tests, resilience tests, character validation tests, snapshot output tests (`snapshot-outputs.test.ts`)
 
 ### 8. Documentation
 
@@ -155,8 +195,10 @@ All modules are invoked from `/analytics` and output is saved to `output/YYYY-MM
 |---|---|
 | **Modify** | `src/apis/meta.ts`, `src/apis/google-ads.ts`, `src/apis/shopify.ts` |
 | **Modify** | `src/staging/reviewer.ts` |
-| **Modify** | `commands/rsa.md`, `commands/meta-ads.md`, `commands/social.md`, `commands/email.md`, `commands/analytics.md` |
+| **Modify** | `commands/rsa.md`, `commands/meta-ads.md`, `commands/social.md`, `commands/email.md`, `commands/analytics.md`, `commands/campaign.md` |
 | **Modify** | `CLAUDE.md`, `.gitignore` |
 | **Create** | `src/utils/exporter.ts` |
 | **Create** | `src/analytics/trends.ts`, `src/analytics/anomalies.ts`, `src/analytics/correlations.ts`, `src/analytics/projections.ts` |
-| **Modify** | Affected test files |
+| **Modify** | `src/analytics/insights-store.ts` (extend `InsightReport` with raw metrics) |
+| **Modify/Delete** | `src/apis/meta.test.ts`, `src/apis/google-ads.test.ts`, `src/apis/shopify.test.ts`, `src/staging/reviewer.test.ts`, `src/campaigns/integration.test.ts`, `src/__tests__/e2e/contract-api-shapes.test.ts`, `src/__tests__/e2e/flow-*.test.ts`, test helpers/fixtures |
+| **Create** | Tests for `exporter.ts`, `trends.ts`, `anomalies.ts`, `correlations.ts`, `projections.ts` |
