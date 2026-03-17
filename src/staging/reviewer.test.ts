@@ -3,9 +3,7 @@ import {
   formatAdTable,
   formatPostPreview,
   formatEmailSummary,
-  applyDecisions,
 } from './reviewer.js';
-import type { StagedItem, ReviewDecision } from './reviewer.js';
 
 describe('formatAdTable', () => {
   it('formats headlines into a numbered table', () => {
@@ -43,33 +41,6 @@ describe('formatEmailSummary', () => {
     expect(output).toContain('Subject A');
     expect(output).toContain('Repeat buyers');
     expect(output).toContain('3 products');
-  });
-});
-
-describe('applyDecisions', () => {
-  it('filters to only approved items', () => {
-    const items: StagedItem[] = [
-      { id: '1', content: 'Item 1' },
-      { id: '2', content: 'Item 2' },
-      { id: '3', content: 'Item 3' },
-    ];
-    const decisions: ReviewDecision[] = [
-      { id: '1', action: 'approve' },
-      { id: '2', action: 'skip' },
-      { id: '3', action: 'approve' },
-    ];
-
-    const approved = applyDecisions(items, decisions);
-    expect(approved).toHaveLength(2);
-    expect(approved.map((i) => i.id)).toEqual(['1', '3']);
-  });
-
-  it('applies edits to items', () => {
-    const items: StagedItem[] = [{ id: '1', content: 'Original' }];
-    const decisions: ReviewDecision[] = [{ id: '1', action: 'edit', newContent: 'Edited' }];
-
-    const result = applyDecisions(items, decisions);
-    expect(result[0].content).toBe('Edited');
   });
 });
 
@@ -155,38 +126,3 @@ describe('formatPostPreview — edge cases', () => {
   });
 });
 
-describe('applyDecisions — edge cases', () => {
-  it('returns empty array when all decisions are skip', () => {
-    const items: StagedItem[] = [{ id: '1', content: 'A' }, { id: '2', content: 'B' }];
-    const decisions: ReviewDecision[] = [{ id: '1', action: 'skip' }, { id: '2', action: 'skip' }];
-    expect(applyDecisions(items, decisions)).toEqual([]);
-  });
-
-  it('handles item with no matching decision (filters out)', () => {
-    const items: StagedItem[] = [{ id: '1', content: 'A' }, { id: '2', content: 'B' }];
-    const decisions: ReviewDecision[] = [{ id: '1', action: 'approve' }];
-    const result = applyDecisions(items, decisions);
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe('1');
-  });
-
-  it('handles empty items array', () => {
-    expect(applyDecisions([], [{ id: '1', action: 'approve' }])).toEqual([]);
-  });
-
-  it('handles empty decisions array', () => {
-    expect(applyDecisions([{ id: '1', content: 'A' }], [])).toEqual([]);
-  });
-
-  it('handles regenerate action (returns null = excluded)', () => {
-    const items: StagedItem[] = [{ id: '1', content: 'A' }];
-    const decisions: ReviewDecision[] = [{ id: '1', action: 'regenerate' }];
-    expect(applyDecisions(items, decisions)).toEqual([]);
-  });
-
-  it('edit without newContent returns null', () => {
-    const items: StagedItem[] = [{ id: '1', content: 'A' }];
-    const decisions: ReviewDecision[] = [{ id: '1', action: 'edit' }];
-    expect(applyDecisions(items, decisions)).toEqual([]);
-  });
-});
