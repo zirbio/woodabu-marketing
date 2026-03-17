@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { InsightsStore } from './insights-store.js';
+import type { InsightReport } from './insights-store.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
@@ -36,6 +37,25 @@ describe('InsightsStore', () => {
     expect(loaded).toHaveLength(1);
     expect(loaded[0].date).toBe('2026-03-15');
     expect(loaded[0].channels.google_ads.patterns).toContain('Pattern A');
+  });
+
+  it('round-trips InsightReport with PeriodMetrics through save/getLatest', () => {
+    const report: InsightReport = {
+      date: '2026-03-17',
+      type: 'weekly',
+      channels: { meta: { top_performers: [], patterns: ['test'] } },
+      recommendations: [{ action: 'test', target: 'meta', reason: 'reason' }],
+      metrics: [
+        { period: '2026-03-10', channel: 'meta', spend: 150, conversions: 12, sessions: null, roas: 2.5 },
+        { period: '2026-03-10', channel: 'ga4', spend: null, conversions: 30, sessions: 500, roas: null },
+      ],
+    };
+    store.save(report);
+    const loaded = store.getLatest(1);
+    expect(loaded[0].metrics).toHaveLength(2);
+    expect(loaded[0].metrics![0].spend).toBe(150);
+    expect(loaded[0].metrics![1].sessions).toBe(500);
+    expect(loaded[0].metrics![1].spend).toBeNull();
   });
 
   it('returns latest N reports sorted by date desc', () => {

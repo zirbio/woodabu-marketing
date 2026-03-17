@@ -38,8 +38,8 @@ When generating any weekly calendar, distribute content across these pillars:
 | Pillar | Share | Content Examples |
 |--------|-------|-----------------|
 | **Maker / Process** | 35-40% | Reels showing workshop footage, sanding, finishing, assembly, tool close-ups, time-lapses of a piece going from raw plank to finished product |
-| **Product in Context** | 20-25% | Finished pieces styled in real customer homes, room staging, "before/after" room transformations, seasonal styling |
-| **Sustainability Story** | 15% | Pure Oceans collection, Zero Waste philosophy, FSC certification explainers, Tree Nation planting updates, packaging choices |
+| **Product in Context** | 20-25% | Best sellers in real homes: Cabecero Tulum, Cabecero Belle Ville, Mesa Extensible Forest, Espejo Pure Oceans, Mesa comedor Oasis. Room staging by Shopify room collections (Dormitorio 38 products, Salón 47, Comedor 30, Cocina 15, Recibidor 11). "Before/after" transformations, seasonal styling. Feature MARKET pieces as "piezas con historia" content |
+| **Sustainability Story** | 15% | Pure Oceans collection (Cabecero Sea Horizon, Cabecero Pure Oceans, Mesa Centro Pure Oceans, Banco Pure Oceans, Espejo Pure Oceans), Zero Waste collection (Banco Natura, Perchero Natura, Perchero Vintage Valley RE, Cabecero Raw Chestnut, Mesita Noche Calm, Mesita Noche EVO), FSC certification explainers, Tree Nation planting updates, packaging choices |
 | **Founder / Team** | 10-15% | Kiko in the workshop, artisan spotlights, UFIL youth program stories, "a day in the life", founder reflections |
 | **Customer Stories (UGC)** | 10% | #MiWoodabu reposts from customer homes, delivery reaction videos, testimonial quotes as graphics, unboxing content |
 | **Education** | 5% | Wood care tips, material comparison carousels ("roble vs. nogal"), "how to choose the right dining table", styling guides |
@@ -179,9 +179,12 @@ Use **8-12 hashtags per Instagram post**. Structure in tiers:
 
 2. **Read products**: Fetch catalog from Shopify via `npx tsx src/apis/shopify.ts`. Identify:
    - New arrivals or restocks to feature
-   - Best sellers to reinforce with social proof
-   - Products with low visibility that need a content push
-   - Seasonal relevance (e.g., outdoor pieces in spring, dining tables before holidays)
+   - Best sellers to reinforce with social proof: **Cabecero Tulum, Mesa Extensible Forest, Cabecero Belle Ville, Espejo Pure Oceans, Mesa extensible Butterfly, Mesa comedor circular Oasis, Mesa comedor Oasis, Perchero Vintage Valley RE, Mesa comedor Off Line, Mesa Extensible Winblack**
+   - Products with low visibility that need a content push (check draft products ready to activate)
+   - Seasonal relevance (e.g., Mesa exterior Asteroid in spring, mesas comedor before holidays)
+   - **MARKET collection** pieces for "piezas únicas" content angle — 30 ex-display/prototype products at special prices
+   - **48-72h stock cabeceros** for urgency-free "disponible ahora" content: Whale Diver, Tulum, Big Camelia, Indie Feeling, Belle Ville
+   - Collection-specific content: **Pure Oceans** (5 products — ocean sustainability angle), **Zero Waste** (7 products — circular economy angle), named collections (Belle Ville, Whale Diver, Pampa, Natura, Chestnut)
 
 3. **Read brand guidelines**: Reference `skills/woodabu-brand.md` for:
    - Tone of voice (warm, authentic, never corporate)
@@ -206,18 +209,12 @@ Use **8-12 hashtags per Instagram post**. Structure in tiers:
    - **Pinterest variant** (if applicable): vertical format description with SEO keywords, suggested board
    - **TikTok variant** (if applicable): adapted caption, trending audio suggestion, raw/unpolished tone
 
-6. **Stage**: Show each post formatted in terminal, organized by day. User approves, edits, or skips individually. For each post, display:
+6. **Stage**: Show each post formatted in terminal, organized by day. For each post, display:
    - Preview of copy (truncated to first 3 lines + "...")
    - Platform badges: [IG] [TT] [PIN] [FB] [LI]
    - Pillar tag
-   - Scheduled time
+   - Suggested time
 
-7. **On approval**: Schedule via Meta Graph API. Posts are SCHEDULED (cancellable from Meta Business Suite). For non-Meta platforms:
-   - TikTok: output copy + instructions for manual posting or Later/Buffer scheduling
-   - Pinterest: output pin details for Tailwind or manual scheduling
-   - LinkedIn: output copy for Kiko to post manually from his personal account
+7. **Export**: Save all posts to `output/YYYY-MM-DD/social-{theme-or-product}.md` using `saveOutput()` from `src/utils/exporter.ts`. Include copy, hashtags, scheduling suggestions, and image/video briefs.
 
-8. **Remind**: User must:
-   - Upload images/videos manually in Meta Business Suite for each scheduled post
-   - Schedule TikTok and Pinterest posts through their respective tools
-   - Review and post LinkedIn content from Kiko's personal account
+8. **Remind**: User must manually schedule/publish posts on each platform (Meta Business Suite, TikTok, Pinterest, LinkedIn).

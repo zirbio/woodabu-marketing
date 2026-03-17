@@ -9,5 +9,7 @@ coverage/
 .DS_Store
 tsconfig.tsbuildinfo
 
+output/
+
 # Claude Code local settings (contains MCP tokens)
 .claude/settings.local.json

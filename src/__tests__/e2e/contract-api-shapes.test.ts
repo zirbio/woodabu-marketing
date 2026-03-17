@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server, resetToDefaults, ga4RunReportMock, createGA4Mock, googleAdsReportMock, googleAdsMutateMock, createGoogleAdsMock } from './helpers/msw-server.js';
-import { metaInsightsResponse, shopifyProductsResponse, shopifyOrdersResponse, shopifySegmentsResponse, shopifyEmailSuccessResponse, ga4TrafficResponse, googleAdsPerformanceRows, googleAdsMutateResponse } from './helpers/fixtures.js';
+import { metaInsightsResponse, shopifyProductsResponse, shopifyOrdersResponse, shopifySegmentsResponse, ga4TrafficResponse, googleAdsPerformanceRows, googleAdsMutateResponse } from './helpers/fixtures.js';
 import { MetaClient } from '../../apis/meta.js';
 import { ShopifyClient } from '../../apis/shopify.js';
 import { GA4Client } from '../../apis/ga4.js';
@@ -56,18 +56,6 @@ describe('API Contract Tests', () => {
       expect(insights[0].conversions).toBe(0);
     });
 
-    it('createAdDraft returns { adId: string }', async () => {
-      const client = new MetaClient(metaConfig);
-      const result = await client.createAdDraft({ campaignId: 'c1', primaryText: 'text', headline: 'head', description: 'desc' });
-      expect(typeof result.adId).toBe('string');
-      expect(result.adId.length).toBeGreaterThan(0);
-    });
-
-    it('schedulePost returns { postId: string }', async () => {
-      const client = new MetaClient(metaConfig);
-      const result = await client.schedulePost({ message: 'Test', scheduledTime: 12345 });
-      expect(typeof result.postId).toBe('string');
-    });
   });
 
   describe('Shopify API response contract', () => {
@@ -115,13 +103,6 @@ describe('API Contract Tests', () => {
       }
     });
 
-    it('createEmailDraft returns EmailDraftResult shape', async () => {
-      const client = new ShopifyClient(shopifyConfig);
-      const result = await client.createEmailDraft({ subject: 'Test', body: '<html></html>' });
-      expect(result).toHaveProperty('campaignId');
-      expect(result).toHaveProperty('fallback');
-      expect(typeof result.fallback).toBe('boolean');
-    });
   });
 
   describe('Google Ads API response contract', () => {
@@ -149,11 +130,6 @@ describe('API Contract Tests', () => {
       }
     });
 
-    it('createRsaAd returns { resourceName: string }', async () => {
-      const client = new GoogleAdsClient(gadsConfig);
-      const result = await client.createRsaAd({ adGroupId: 'ag_1', headlines: ['H1'], descriptions: ['D1'] });
-      expect(typeof result.resourceName).toBe('string');
-    });
   });
 
   describe('GA4 API response contract', () => {

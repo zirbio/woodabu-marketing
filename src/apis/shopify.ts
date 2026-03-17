@@ -26,17 +26,6 @@ export interface CustomerSegment {
   query: string;
 }
 
-export interface EmailDraftInput {
-  subject: string;
-  body: string;
-}
-
-export interface EmailDraftResult {
-  campaignId: string | null;
-  fallback: boolean;
-  error?: string;
-}
-
 export class ShopifyClient {
   private readonly endpoint: string;
   private readonly headers: Record<string, string>;
@@ -139,40 +128,4 @@ export class ShopifyClient {
     }));
   }
 
-  async createEmailDraft(input: EmailDraftInput): Promise<EmailDraftResult> {
-    try {
-      const data = await this.query(
-        `mutation CreateEmailDraft($subject: String!, $body: String!) {
-          emailMarketingCampaignCreate(input: {
-            subject: $subject
-            body: $body
-          }) {
-            emailMarketingCampaign { id }
-            userErrors { message field }
-          }
-        }`,
-        { subject: input.subject, body: input.body }
-      );
-
-      const result = data.emailMarketingCampaignCreate as {
-        emailMarketingCampaign: { id: string } | null;
-        userErrors: Array<{ message: string; field: string[] }>;
-      };
-
-      if (result.userErrors.length > 0) {
-        return {
-          campaignId: null,
-          fallback: true,
-          error: result.userErrors.map((e) => e.message).join(', '),
-        };
-      }
-
-      return {
-        campaignId: result.emailMarketingCampaign?.id ?? null,
-        fallback: false,
-      };
-    } catch {
-      return { campaignId: null, fallback: true, error: 'Email API unavailable' };
-    }
-  }
 }

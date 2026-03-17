@@ -9,8 +9,6 @@ const googleAdsReportMock = vi.fn().mockResolvedValue([
   },
 ]);
 
-const googleAdsMutateMock = vi.fn().mockResolvedValue({ results: [{ resource_name: 'customers/123/adGroupAds/456' }] });
-
 vi.mock('google-ads-api', () => {
   return {
     GoogleAdsApi: vi.fn().mockImplementation(function () {
@@ -18,7 +16,6 @@ vi.mock('google-ads-api', () => {
         Customer: vi.fn().mockImplementation(function () {
           return {
             report: googleAdsReportMock,
-            mutateResources: googleAdsMutateMock,
             credentials: { customer_id: '123' },
           };
         }),
@@ -41,16 +38,6 @@ describe('GoogleAdsClient', () => {
     const results = await client.getCampaignPerformance();
     expect(results).toHaveLength(1);
     expect(results[0].metrics.ctr).toBe(0.05);
-  });
-
-  it('creates ads in PAUSED state', async () => {
-    const client = new GoogleAdsClient(config);
-    const result = await client.createRsaAd({
-      adGroupId: 'ag_1',
-      headlines: ['Headline 1'],
-      descriptions: ['Description 1'],
-    });
-    expect(result.resourceName).toContain('adGroupAds');
   });
 
   it('returns top and bottom performers', async () => {
@@ -86,28 +73,6 @@ describe('GoogleAdsClient — getCampaignPerformance edge cases', () => {
     const client = new GoogleAdsClient(config);
     const results = await client.getCampaignPerformance();
     expect(results).toHaveLength(5);
-  });
-});
-
-describe('GoogleAdsClient — createRsaAd edge cases', () => {
-  const config = {
-    clientId: 'test-id', clientSecret: 'test-secret', refreshToken: 'test-refresh',
-    developerToken: 'test-dev', customerId: '123',
-  };
-
-  it('handles mutate_operation_responses format', async () => {
-    googleAdsMutateMock.mockResolvedValueOnce({
-      mutate_operation_responses: [{ ad_group_ad_result: { resource_name: 'customers/123/adGroupAds/alt_789' } }],
-    });
-    const client = new GoogleAdsClient(config);
-    const result = await client.createRsaAd({ adGroupId: 'ag_1', headlines: ['H1'], descriptions: ['D1'] });
-    expect(result.resourceName).toBe('customers/123/adGroupAds/alt_789');
-  });
-
-  it('throws on unexpected mutate response format', async () => {
-    googleAdsMutateMock.mockResolvedValueOnce({});
-    const client = new GoogleAdsClient(config);
-    await expect(client.createRsaAd({ adGroupId: 'ag_1', headlines: ['H1'], descriptions: ['D1'] })).rejects.toThrow('Unexpected mutate response format');
   });
 });
 

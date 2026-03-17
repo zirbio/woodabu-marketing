@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server, createGA4Mock, createGoogleAdsMock } from './helpers/msw-server.js';
-import { shopifyEmailSuccessResponse, shopifyEmailUserErrorResponse } from './helpers/fixtures.js';
 
 vi.mock('@google-analytics/data', () => createGA4Mock());
 vi.mock('google-ads-api', () => createGoogleAdsMock());
@@ -191,51 +190,6 @@ describe('Resilience — E2E', () => {
 
       expect(response.status).toBe(401);
       expect(mockFetch).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  describe('Shopify email graceful degradation', () => {
-    it('Network error → fallback', async () => {
-      server.use(
-        http.post(SHOPIFY_BASE, () => HttpResponse.error()),
-      );
-
-      const client = new ShopifyClient(shopifyConfig);
-      const result = await client.createEmailDraft({ subject: 'Test', body: '<p>Hello</p>' });
-
-      expect(result.fallback).toBe(true);
-      expect(result.campaignId).toBeNull();
-      expect(result.error).toBe('Email API unavailable');
-    });
-
-    it('userErrors → fallback', async () => {
-      server.use(
-        http.post(SHOPIFY_BASE, () =>
-          HttpResponse.json(shopifyEmailUserErrorResponse),
-        ),
-      );
-
-      const client = new ShopifyClient(shopifyConfig);
-      const result = await client.createEmailDraft({ subject: 'Test', body: '<p>Hello</p>' });
-
-      expect(result.fallback).toBe(true);
-      expect(result.campaignId).toBeNull();
-      expect(result.error).toContain('Feature not available');
-    });
-
-    it('Success path → no fallback', async () => {
-      server.use(
-        http.post(SHOPIFY_BASE, () =>
-          HttpResponse.json(shopifyEmailSuccessResponse),
-        ),
-      );
-
-      const client = new ShopifyClient(shopifyConfig);
-      const result = await client.createEmailDraft({ subject: 'Test', body: '<p>Hello</p>' });
-
-      expect(result.fallback).toBe(false);
-      expect(result.campaignId).toBe('gid://shopify/EmailCampaign/e2e_1');
-      expect(result.error).toBeUndefined();
     });
   });
 

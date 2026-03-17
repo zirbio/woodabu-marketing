@@ -5,12 +5,6 @@ export interface StagedItem {
   content: string;
 }
 
-export interface ReviewDecision {
-  id: string;
-  action: 'approve' | 'edit' | 'skip' | 'regenerate';
-  newContent?: string;
-}
-
 export interface PostPreviewInput {
   copy: string;
   hashtags: string[];
@@ -65,20 +59,4 @@ export function formatEmailSummary(input: EmailSummaryInput): string {
     `**Includes:** ${input.productCount} products`,
   ];
   return lines.join('\n');
-}
-
-export function applyDecisions(items: StagedItem[], decisions: ReviewDecision[]): StagedItem[] {
-  const decisionMap = new Map(decisions.map((d) => [d.id, d]));
-
-  return items
-    .map((item) => {
-      const decision = decisionMap.get(item.id);
-      if (!decision || decision.action === 'skip') return null;
-      if (decision.action === 'edit' && decision.newContent) {
-        return { ...item, content: decision.newContent };
-      }
-      if (decision.action === 'approve') return item;
-      return null;
-    })
-    .filter((item): item is StagedItem => item !== null);
 }

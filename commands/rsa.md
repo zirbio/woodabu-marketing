@@ -15,10 +15,19 @@ Before generating, ask the user which campaign type they are generating for:
 
 ## Keyword Alignment
 
-When generating headlines, ask for or infer the target ad group keywords. Headlines MUST match search intent:
+When generating headlines, ask for or infer the target ad group keywords. Headlines MUST match search intent.
 
+**Real keyword clusters from Shopify product tags (use for ad group alignment):**
+- Cabeceros: "cabecero de madera," "cabeceros de madera maciza," "cabeceros de madera modernos," "cabeceros de madera artesanales," "cabecero grande de madera"
+- Mesas: "mesa de madera maciza," "mesa de madera moderna," "mesa circular madera," "mesa centro madera rústica"
+- Bancos: "banco de madera," "banco de madera maciza," "banco de madera artesanal," "banco madera para comedor"
+- Cuadros: "cuadros de madera," "cuadros de madera modernos," "cuadros de madera decorativos"
+- Espejos: "espejo de madera," "espejos de madera grandes," "espejos de madera modernos"
+
+**Keyword → headline mapping:**
 - If keywords = "mesa comedor madera" → headlines must mention dining tables + solid wood
-- If keywords = "cabecero madera natural" → headlines must mention headboards + natural wood
+- If keywords = "cabecero madera" → headlines must mention headboards + natural wood (top product: Cabecero Tulum, 7 units/period)
+- If keywords = "mesa extensible madera" → mention extendable tables (top revenue: Winblack, Forest)
 - If keywords = "muebles sostenibles" → headlines must emphasize sustainability + FSC + Zero Waste
 - If keywords = brand terms → headlines should reinforce trust, authority, and direct brand recall
 - If keywords = competitor terms → headlines should highlight Woodabu differentiators without naming competitors
@@ -50,11 +59,9 @@ When generating headlines, ask for or infer the target ad group keywords. Headli
    | 1 | Benefit + Material | ... | 85 |
    ```
 
-8. **Ask for approval**: "Review the ads above. Options: [a] Approve all, [e] Edit specific items, [r] Regenerate, [s] Skip"
+8. **Export**: Save the complete RSA batch to `output/YYYY-MM-DD/rsa-{campaign-name}.md` using `saveOutput()` from `src/utils/exporter.ts`. Include headlines table, descriptions table, performance context, and recommendations.
 
-9. **On approval**: Run the publish script to create ads in PAUSED state via Google Ads API.
-
-10. **Confirm**: Show the created ad resource names and remind the user to activate them in Google Ads dashboard when ready.
+9. **Confirm**: Show the file path and remind the user to copy headlines and descriptions into Google Ads dashboard manually.
 
 ## Headline Categories (15 total, max 30 chars each)
 
@@ -62,11 +69,11 @@ When generating 15 headlines, organize them by type. Each headline must be ≤30
 
 ### 3-4 Keyword-match headlines (match search intent directly)
 
-These are the highest-impact headlines for Quality Score. They must contain the exact or near-exact target keywords from the ad group.
+These are the highest-impact headlines for Quality Score. They must contain the exact or near-exact target keywords from the ad group. Use real product categories from the Shopify catalog (59 active products across: cabeceros, mesas comedor, mesas extensibles, mesas de centro, bancos, espejos, cuadros, percheros, consolas, puertas, sillas, tablas de cocina).
 
 - "Mesa Comedor Madera Maciza" (26)
 - "Cabeceros Madera Natural" (24)
-- "Mesa Extensible Roble" (21)
+- "Mesa Extensible de Madera" (25)
 - "Muebles Sostenibles Madrid" (26)
 
 ### 3-4 Value proposition headlines
@@ -102,10 +109,25 @@ Highlight what competitors cannot claim. Origin, guarantee, philosophy.
 
 ### 1-2 Price-anchoring headlines (pre-qualify clicks, reduce wasted spend)
 
-Including a price point filters out users outside the budget range, reducing wasted clicks and improving ROAS.
+Including a price point filters out users outside the budget range, reducing wasted clicks and improving ROAS. Use real entry prices from the Shopify catalog:
 
-- "Mesas Desde 645€" (17)
-- "Cabeceros Desde 399€" (20)
+- "Mesas Desde 509€" (17) — Mesa comedor circular Off-Line
+- "Cabeceros Desde 399€" (20) — Cabecero Leisure
+- "Espejos Desde 332€" (19) — Espejo Green Field
+- "Bancos Desde 275€" (18) — Banco Off-Line
+- "Mesas Centro Desde 429€" (22) — Mesa Centro Chestnut
+
+**Current real price ranges (Shopify, March 2026):**
+- Cabeceros: €399–€922 (base to premium variant)
+- Mesas comedor: €509–€926
+- Mesas extensibles: €1,249–€2,649
+- Mesas de centro: €429–€799
+- Espejos: €332–€849
+- Bancos: €275–€319
+- Cuadros: €199–€589
+- Puertas: €1,345–€1,445
+
+**AOV reference:** ~€833. Most customers purchase single high-value pieces
 
 ## Description Lines (4 total, max 90 chars each)
 

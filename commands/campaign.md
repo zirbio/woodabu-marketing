@@ -1,9 +1,9 @@
 ---
 name: campaign
-description: Load and deploy ad campaigns from YAML definitions
+description: Load, preview, and export ad campaigns from YAML definitions
 ---
 
-You are deploying a Woodabu ad campaign defined in a YAML file.
+You are previewing and exporting a Woodabu ad campaign defined in a YAML file.
 
 ## Subcommands
 
@@ -24,19 +24,11 @@ Validate a YAML file without creating anything.
 
 3. **Stage for review**: Convert to staged items using `loadCampaign()` from `src/campaigns/loader.ts`. Present each ad for review using `formatCampaignPreview()`.
 
-4. **Ask for approval**: Per-ad: [a] Approve, [e] Edit, [r] Regenerate, [s] Skip.
+4. **Export**: Save the full campaign preview to `output/YYYY-MM-DD/campaign-{name}.md` using `saveOutput()` from `src/utils/exporter.ts`. Include all ad copy, targeting summary, budget, and character counts.
 
-5. **Apply decisions**: Use `applyDecisions()` from `src/staging/reviewer.ts` to filter approved ads.
-
-6. **Create on platform** (requires `campaign_id` in YAML):
-   - If `campaign_id` is missing, warn the user: "Add campaign_id to your YAML to create ads. You can find it in Meta Ads Manager or Google Ads console."
-   - **Meta** (`platform: meta`): For each approved ad, map fields to `CreateAdInput` (`campaign_id` → `campaignId`, `primary_text` → `primaryText`, `headline` → `headline`, `description` → `description`) and call `MetaClient.createAdDraft()` from `src/apis/meta.ts`. All ads are created as PAUSED.
-   - **Google Ads** (`platform: google_ads`): Not supported via YAML campaign definitions. YAML ads define a single headline/description per ad, but `GoogleAdsClient.createRsaAd()` requires 15 headlines + 4 descriptions + an `adGroupId`. Use the `/rsa` command instead for Google Ads RSA generation.
-
-7. **Report**: Show created ad IDs and remind user to review in the platform's ad manager before activating.
+5. **Confirm**: Show the file path. The YAML file remains in `campaigns/` as a planning record. Remind the user to create the campaign manually on the target platform.
 
 ## Rules
-- All campaigns are created as PAUSED — never auto-publish.
 - YAML files in `campaigns/` can be version-controlled and reused.
 - Read `skills/woodabu-brand.md` before generating or editing ad copy.
 - Use `[...text].length` for character counting (handles Spanish accented characters).

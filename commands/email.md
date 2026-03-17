@@ -45,13 +45,19 @@ Automated flows. Supported types:
 3. **Day 14 — Custom consultation CTA.** "Have something specific in mind? Let's talk." Invite to a free customization consultation via WhatsApp or email. Position Woodabu as a partner, not just a store.
 
 #### `cross-sell` — room-based logic
-Triggered 30-60 days post-delivery. Recommendations follow room completion logic:
-- **Bedroom:** headboard → nightstand → bench → wardrobe
-- **Dining:** dining table → bench → sideboard → wall art
-- **Living room:** coffee table → shelving → media console
-- **Entry:** console table → coat rack → mirror frame
+Triggered 30-60 days post-delivery. Recommendations follow room completion logic using real Shopify catalog products:
+
+- **Dormitorio:** Cabecero (Tulum, Belle Ville, Whale Diver, Indie Feeling, Big Camelia, Leisure) → Mesita de noche (EVO, Calm, Dusty) → Banco (Off-Line, Belle Ville, Whale Diver) → Espejo (Forest Bird, White Ceiling, Pampa)
+- **Comedor:** Mesa comedor (Oasis, Off Line, Winblack, Sandy Star, Camelia Milling) o Mesa extensible (Forest, Winblack, Butterfly, Sakura) → Banco (Rustic Wave, Off-Line, Belle Ville) → Silla (Ainhoa, Koko) → Cuadro (Wooden Shelter, Elephant Bites, Barley Line)
+- **Salón:** Mesa de centro (Cozy Sand, Light Swing, Pure Oceans, Chestnut, Ecoleaf, Bean, Hábitat elevable) → Espejo (Pampa, Kenia, Green Field) → Cuadro (Woody, Winblack, Wooden Shelter) → Estantería Everlast
+- **Recibidor:** Consola (Palma Style, Pampa) → Perchero (Vintage Valley RE, Deep Blue Sea, Blue Wind, Belle Ville) → Espejo (Green Field, Pure Oceans, White Ceiling, Kenia)
+- **Cocina:** Mesa comedor circular (Oasis, Sandy Star, Camelia Milling, Off-Line) → Taburete Cherry → Tabla de cocina (Trispec, Mindfull, Singular, Tribal, Cheese, Pizza)
+
+**Best sellers to prioritize in cross-sell:** Cabecero Tulum, Mesa Extensible Forest, Cabecero Belle Ville, Espejo Pure Oceans, Mesa extensible Butterfly, Perchero Vintage Valley RE
 
 Always reference their existing piece: "Your [product name] in [wood type] pairs perfectly with..." Never generic recommendations.
+
+**Collection-based cross-sell:** If the customer bought from a named collection (Belle Ville, Whale Diver, Pampa, Natura), recommend other pieces from the same collection first to build a cohesive room
 
 #### `browse-abandonment`
 Triggered when a visitor views the same product 2+ times without purchasing. Lighter touch than abandoned-cart (no cart intent signal):
@@ -68,11 +74,16 @@ Weekly/monthly newsletter.
 When generating email content, tailor messaging to these segments:
 
 ### By purchase behavior
-- **Non-buyers:** Education-first. Workshop stories, material guides, sustainability content. Build trust before any product focus.
-- **First-time buyers:** Post-purchase nurture is critical. They need to feel the handcrafted experience was worth the wait. Prime them for cross-sell.
-- **Repeat buyers:** Community members. Early access to new collections, consultation invitations, referral program.
-- **High AOV (>€1,000):** White-glove communication. Personal emails from Kiko. Custom project invitations. These are design-conscious buyers.
-- **Entry AOV (<€400):** Likely bought a smaller piece (shelf, stool, wall art). Educate on larger pieces. Show how small pieces complement bigger ones.
+
+*Current Shopify segments: 17,997 total customers, AOV ~€833, 3,251+ orders*
+
+- **Non-buyers (Shopify segment: "Clientes que no han comprado" / "Leads (0 pedidos)"):** Education-first. Workshop stories, material guides, sustainability content. Build trust before any product focus.
+- **First-time buyers (Shopify segment: "Clientes que compraron al menos una vez"):** Post-purchase nurture is critical. They need to feel the handcrafted experience was worth the wait. Prime them for cross-sell.
+- **Repeat buyers (Shopify segment: "Clientes que han comprado más de una vez"):** Community members. Early access to new collections, consultation invitations, referral program.
+- **High AOV (>€1,000):** White-glove communication. Personal emails from Kiko. Custom project invitations. These are design-conscious buyers — likely purchased a mesa extensible (€1,249–€2,649) or mesa comedor premium.
+- **Entry AOV (<€400):** Likely bought a cuadro (desde €199), banco (desde €275), perchero (desde €239), mesita de noche (desde €229), or espejo entry (€332). Educate on larger pieces. Show how small pieces complement bigger ones.
+- **Abandoned carts (Shopify segment: "Carritos abandonados en los últimos 30 días"):** Critical recovery segment — trigger abandoned-cart flow.
+- **Email subscribers (Shopify segment: "Suscriptores de correo electrónico" / "Suscriptores no clientes 2"):** Newsletter and campaign audience. Sub-segment by buyer vs non-buyer for different messaging.
 
 ### By collection interest
 - **Zero Waste:** Lead with sustainability, reclaimed materials, environmental impact metrics.
@@ -193,4 +204,8 @@ Before asking for a public review, ask internally: **"How was your experience?"*
    - Handcrafted visual element (workshop photo, wood close-up, artisan signature)
 5. **Compile**: Use `src/staging/html-preview.ts` to compile MJML to HTML.
 6. **Stage**: Save HTML to temp file, open in browser for preview. Show summary in terminal.
-7. **On approval**: Attempt to create draft via Shopify GraphQL API. If unavailable, instruct user to copy HTML into Shopify Email manually.
+7. **Export**: Save the email content in two formats using `saveOutput()` from `src/utils/exporter.ts`:
+   - `output/YYYY-MM-DD/email-{campaign-name}.md` — copy text with subject line variants, preheader, and product recommendations
+   - `output/YYYY-MM-DD/email-{campaign-name}.html` — compiled HTML from MJML, ready to paste into Shopify Email
+
+   Show both file paths and remind the user to create the campaign in Shopify Email manually.

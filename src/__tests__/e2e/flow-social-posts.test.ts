@@ -1,29 +1,18 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
-import { http, HttpResponse } from 'msw';
 
 import {
   server,
   resetToDefaults,
 } from './helpers/msw-server.js';
 import { stubAllEnvVars } from './helpers/env-stub.js';
-import {
-  metaPageInsightsResponse,
-  metaSchedulePostResponse,
-  shopifyProductsResponse,
-} from './helpers/fixtures.js';
 
 import { loadConfig } from '../../utils/auth.js';
-import { MetaClient, type SchedulePostInput } from '../../apis/meta.js';
+import { MetaClient } from '../../apis/meta.js';
 import { ShopifyClient } from '../../apis/shopify.js';
 import {
   formatPostPreview,
-  applyDecisions,
   type PostPreviewInput,
-  type StagedItem,
-  type ReviewDecision,
 } from '../../staging/reviewer.js';
-
-const META_BASE = 'https://graph.facebook.com/v19.0';
 
 describe('Social Posts — E2E', () => {
   beforeAll(() => {
@@ -79,56 +68,7 @@ describe('Social Posts — E2E', () => {
       expect(preview).toContain('mesa-roble.jpg');
     });
 
-    it('stages posts and applies review decisions', () => {
-      const staged: StagedItem[] = [
-        { id: 'post1', content: 'Descubre nuestra Mesa Roble Macizo #woodabu' },
-        { id: 'post2', content: 'Cabecero Castaño: artesanía en madera #sostenible' },
-        { id: 'post3', content: 'Estantería modular de pino reciclado #eco' },
-      ];
-
-      const decisions: ReviewDecision[] = [
-        { id: 'post1', action: 'approve' },
-        { id: 'post2', action: 'edit', newContent: 'Cabecero Castaño tallado a mano #woodabu #artesanal' },
-        { id: 'post3', action: 'skip' },
-      ];
-
-      const result = applyDecisions(staged, decisions);
-      expect(result).toHaveLength(2);
-      expect(result[0].content).toContain('Mesa Roble');
-      expect(result[1].content).toContain('tallado a mano');
-    });
-
-    it('schedules a post with published:false', async () => {
-      let capturedBody: Record<string, unknown> = {};
-      server.use(
-        http.post(`${META_BASE}/:pageId/feed`, async ({ request }) => {
-          capturedBody = await request.json() as Record<string, unknown>;
-          return HttpResponse.json(metaSchedulePostResponse);
-        }),
-      );
-
-      const config = loadConfig();
-      const metaClient = new MetaClient(config.meta);
-      const scheduledTime = Math.floor(Date.now() / 1000) + 86400;
-      const result = await metaClient.schedulePost({
-        message: 'Descubre nuestra Mesa Roble Macizo #woodabu',
-        scheduledTime,
-      });
-
-      expect(result.postId).toBe('post_e2e_999');
-      expect(capturedBody.published).toBe(false);
-      expect(capturedBody.scheduled_publish_time).toBe(scheduledTime);
-    });
-
-    it('FULL PIPELINE: fetch engagement -> fetch products -> format -> stage -> review -> schedule', async () => {
-      let capturedBody: Record<string, unknown> = {};
-      server.use(
-        http.post(`${META_BASE}/:pageId/feed`, async ({ request }) => {
-          capturedBody = await request.json() as Record<string, unknown>;
-          return HttpResponse.json(metaSchedulePostResponse);
-        }),
-      );
-
+    it('FULL PIPELINE: fetch engagement -> fetch products -> format preview', async () => {
       const config = loadConfig();
 
       // 1. Fetch page engagement
@@ -154,67 +94,10 @@ describe('Social Posts — E2E', () => {
         imageUrl: product.imageUrl,
       });
       expect(preview).toContain(product.title);
-
-      // 5. Stage and review
-      const staged: StagedItem[] = [{ id: 'post1', content: copy }];
-      const decisions: ReviewDecision[] = [{ id: 'post1', action: 'approve' }];
-      const approved = applyDecisions(staged, decisions);
-      expect(approved).toHaveLength(1);
-
-      // 6. Schedule post
-      const scheduledTime = Math.floor(Date.now() / 1000) + 86400;
-      const result = await metaClient.schedulePost({
-        message: `${approved[0].content} ${hashtags.join(' ')}`,
-        scheduledTime,
-        link: `https://woodabu.com/${product.handle}`,
-      });
-
-      expect(result.postId).toBeDefined();
-      expect(capturedBody.published).toBe(false);
-      expect(capturedBody.link).toContain('woodabu.com');
     });
   });
 
-  describe('post options', () => {
-    it('includes link when provided', async () => {
-      let capturedBody: Record<string, unknown> = {};
-      server.use(
-        http.post(`${META_BASE}/:pageId/feed`, async ({ request }) => {
-          capturedBody = await request.json() as Record<string, unknown>;
-          return HttpResponse.json(metaSchedulePostResponse);
-        }),
-      );
-
-      const config = loadConfig();
-      const metaClient = new MetaClient(config.meta);
-      await metaClient.schedulePost({
-        message: 'Test post with link',
-        scheduledTime: Math.floor(Date.now() / 1000) + 3600,
-        link: 'https://woodabu.com/mesa-roble-macizo',
-      });
-
-      expect(capturedBody.link).toBe('https://woodabu.com/mesa-roble-macizo');
-    });
-
-    it('omits link when not provided', async () => {
-      let capturedBody: Record<string, unknown> = {};
-      server.use(
-        http.post(`${META_BASE}/:pageId/feed`, async ({ request }) => {
-          capturedBody = await request.json() as Record<string, unknown>;
-          return HttpResponse.json(metaSchedulePostResponse);
-        }),
-      );
-
-      const config = loadConfig();
-      const metaClient = new MetaClient(config.meta);
-      await metaClient.schedulePost({
-        message: 'Test post without link',
-        scheduledTime: Math.floor(Date.now() / 1000) + 3600,
-      });
-
-      expect(capturedBody).not.toHaveProperty('link');
-    });
-
+  describe('post formatting', () => {
     it('formats preview with multiple hashtags', () => {
       const input: PostPreviewInput = {
         copy: 'Check out our new collection',
@@ -266,15 +149,5 @@ describe('Social Posts — E2E', () => {
       expect(preview).toContain('**Image:** https://cdn.shopify.com/test.jpg');
     });
 
-    it('applyDecisions with regenerate action filters out the item', () => {
-      const staged: StagedItem[] = [
-        { id: 'p1', content: 'Content to regenerate' },
-      ];
-      const decisions: ReviewDecision[] = [
-        { id: 'p1', action: 'regenerate' },
-      ];
-      const result = applyDecisions(staged, decisions);
-      expect(result).toHaveLength(0);
-    });
   });
 });
