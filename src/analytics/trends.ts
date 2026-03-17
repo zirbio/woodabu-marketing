@@ -19,7 +19,10 @@ function simpleMovingAverageSlope(values: number[]): number {
     smaValues.push(window.reduce((a, b) => a + b, 0) / windowSize);
   }
   if (smaValues.length < 2) return 0;
-  return (smaValues[smaValues.length - 1] - smaValues[0]) / smaValues[0];
+  const first = smaValues[0];
+  const last = smaValues[smaValues.length - 1];
+  if (first === 0) return last === 0 ? 0 : 1;
+  return (last - first) / first;
 }
 
 export function detectTrends(metrics: PeriodMetrics[]): TrendResult[] {

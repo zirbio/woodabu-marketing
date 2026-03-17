@@ -50,6 +50,19 @@ describe('detectTrends', () => {
     expect(trends.find((t) => t.metric === 'sessions' && t.channel === 'ga4')).toBeDefined();
   });
 
+  it('handles zero-valued metrics without producing Infinity or NaN', () => {
+    const metrics: PeriodMetrics[] = [
+      { period: '2026-01-06', channel: 'meta', spend: 0, conversions: 0, sessions: null, roas: null },
+      { period: '2026-01-13', channel: 'meta', spend: 0, conversions: 0, sessions: null, roas: null },
+      { period: '2026-01-20', channel: 'meta', spend: 0, conversions: 0, sessions: null, roas: null },
+      { period: '2026-01-27', channel: 'meta', spend: 50, conversions: 5, sessions: null, roas: null },
+    ];
+    const trends = detectTrends(metrics);
+    for (const t of trends) {
+      expect(Number.isFinite(t.magnitude)).toBe(true);
+    }
+  });
+
   it('returns empty array for empty input', () => {
     expect(detectTrends([])).toEqual([]);
   });
