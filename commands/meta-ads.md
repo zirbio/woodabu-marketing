@@ -25,9 +25,9 @@ You are generating Meta Ads for Woodabu, a handcrafted sustainable furniture com
 
 9. **Stage for review**: Present in a table grouped by segment (see staging format below).
 
-10. **Ask for approval**: Per-segment: [a] Approve, [e] Edit, [r] Regenerate, [s] Skip
+10. **Export**: Save all ad variants to `output/YYYY-MM-DD/meta-ads-{segment-name}.md` using `saveOutput()` from `src/utils/exporter.ts`. Include copy variants, targeting recommendations, and performance context.
 
-11. **On approval**: Create ads as DRAFT via Meta Marketing API. Remind user they appear in Meta Ads Manager as drafts for final review.
+11. **Confirm**: Show the file path and remind the user to create ads manually in Meta Ads Manager.
 
 ---
 
@@ -91,11 +91,12 @@ When the user specifies a funnel stage, apply the corresponding strategy:
 
 ### TOF (Top of Funnel — Awareness) — 20-30% budget
 - **Objective**: Video views, reach
-- **Content formats**: Workshop Reels, founder story videos, Pure Oceans mission content, behind-the-scenes craftsmanship
-- **Audiences**: Interest-based targeting from segments above, broad audiences with creative-led targeting, Lookalike 5-10% from purchasers
+- **Content formats**: Workshop Reels, founder story videos, Pure Oceans mission content (5 products: Cabecero Pure Oceans, Cabecero Sea Horizon, Mesa de Centro Pure Oceans, Banco Pure Oceans, Espejo Pure Oceans), behind-the-scenes craftsmanship
+- **Audiences**: Interest-based targeting from segments above, broad audiences with creative-led targeting, Lookalike 5-10% from purchasers (base: 17,997 customers)
 - **Copy style**: Storytelling, brand awareness, NO hard CTA. Let the craft speak. Lead with "why" not "what."
 - **Primary text length**: Longer allowed (up to 250 chars) — narrative-driven
 - **Example hook**: "Cada mesa empieza con un tronco y una conversación."
+- **Product focus for TOF**: Zero Waste collection story (Banco Natura, Perchero Vintage Valley RE, Mesita Noche EVO), Pure Oceans collection story, workshop process featuring best sellers (Cabecero Tulum, Mesa Extensible Forest)
 
 ### MOF (Middle of Funnel — Consideration) — 30-40% budget
 - **Objective**: Traffic, engagement, email capture
@@ -113,6 +114,9 @@ When the user specifies a funnel stage, apply the corresponding strategy:
 - **Primary text length**: 100-150 chars — direct, conversion-oriented
 - **Must include**: "Paga en cuotas con Klarna" and/or "Habla con nosotros por WhatsApp" where relevant
 - **Must include**: Specific product name and price when applicable
+- **Best sellers to feature in BOF ads** (highest conversion probability): Cabecero Tulum (desde €518), Mesa Extensible Forest (~€2,149), Cabecero Belle Ville (desde €419), Espejo Pure Oceans (desde €465), Mesa extensible Butterfly, Mesa comedor Oasis (desde €645)
+- **Quick-ship angle**: 5 cabeceros in stock for 48-72h delivery (Whale Diver, Tulum, Big Camelia, Indie Feeling, Belle Ville) — use for time-sensitive BOF audiences
+- **MARKET pieces**: For price-sensitive BOF audiences, feature ex-display "como nuevo" pieces at reduced prices with ~1 week delivery
 
 ---
 
@@ -126,7 +130,7 @@ When the user specifies retargeting, ask which segment and apply the correspondi
 | Collection page viewers | 1-21 days | Category-specific inspiration | Reference the specific collection they viewed. Room inspiration imagery. |
 | Product page viewers (no ATC) | 1-30 days | Product + social proof + warranty | Name the product, include star rating, mention lifetime warranty. Overcome objections. |
 | ATC abandoners | 1-14 days | Reassurance + Klarna + WhatsApp | Address hesitation directly. "Todavia pensando en [product]?" Include Klarna and WhatsApp. |
-| Past purchasers | 30-180 days | Complementary products by room | "Tu [previous product] merece compania." Suggest products that complete the room. |
+| Past purchasers | 30-180 days | Complementary products by room | "Tu [previous product] merece compania." Room-based cross-sell: Dormitorio (cabecero → mesita EVO/Calm → banco → espejo), Comedor (mesa → banco → sillas Ainhoa/Koko → cuadro), Recibidor (consola Palma Style/Pampa → perchero → espejo). Use named collections for cohesive sets (Belle Ville, Whale Diver, Pampa) |
 | Video viewers (50%+) | 1-30 days | Product showcase (story to product) | Move from brand story to specific product. "Ya conoces nuestra historia. Ahora descubre [product]." |
 
 **Frequency cap**: Maximum 3-4 impressions per person per week for all retargeting campaigns. Flag this to the user as a reminder when generating retargeting ads.
@@ -212,7 +216,9 @@ Use these benchmarks to evaluate campaign performance and set expectations when 
 | CVR (conversion rate) | 0.5-1.5% | Higher for BOF retargeting, lower for TOF |
 | ROAS | 3-6x | Blended across funnel; BOF should be 5-8x, TOF may be <1x |
 | CPM | €6-15 (low season) / €12-25 (Q4) | Monitor weekly; spikes signal auction competition |
-| CPA (cost per acquisition) | €60-150 | Varies by product AOV; target CPA < 15% of AOV |
+| CPA (cost per acquisition) | €60-150 | Varies by product AOV; target CPA < 15% of AOV (AOV ~€833) |
+
+**Shopify reference (March 2026):** 17,997 customers, 3,251+ orders, AOV ~€833. With CPA target <15% of AOV, maximum acceptable CPA is ~€125.
 
 When fetching performance data in step 1, compare actuals against these benchmarks and flag any metrics outside range.
 

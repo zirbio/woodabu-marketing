@@ -140,19 +140,44 @@ The `/analytics weekly` report MUST include all of the following sections, in th
 - List health: growth rate, bounce rate, spam complaint rate
 
 ### e) Product Performance
+
+**Reference data (Shopify, March 2026):** 59 active products, 149 total. AOV ~€833. 17,997 customers, 3,251+ orders.
+
+**Current Best Sellers (Shopify collection):**
+1. Cabecero de madera Tulum (€518 base)
+2. Mesa Extensible Forest (~€2,149)
+3. Cabecero de madera Belle Ville (~€419-521)
+4. Espejo Pure Oceans (€465 base)
+5. Mesa extensible Butterfly
+6. Mesa de comedor circular Oasis (€669 base)
+7. Mesa de comedor Oasis (€645 base)
+8. Perchero Vintage Valley RE (€279)
+9. Mesa de comedor Off Line (€669 base)
+10. Mesa Extensible Winblack (~€2,249)
+
+**Product categories by type (active):** Cabecero (10), Mesa comedor (8), Mesas de centro (7), Banco (6), Espejo (6), Mesa extensible (5), Cuadro (4), Puerta (4), Mesita de noche (3), Perchero (3), Consola (2), Silla (2), Tabla cocina (6), Taburete (1)
+
 - **Top 5 products by units sold** — with revenue and margin if available
 - **Top 5 products by revenue** — with average selling price and discount rate
 - **Optimization opportunities:** products with high page views but low conversion rate
   - For each, suggest a hypothesis (price, imagery, description, reviews) and a test
 - **Stock alert:** flag any top performer with low inventory
 - **New product performance:** if any product launched in the last 30 days, show its metrics vs expectations
+- **MARKET collection performance:** track sell-through rate of ex-display pieces (30 products, typically faster delivery ~1 week)
 
 ### f) Customer Insights
-- New vs returning customer split (orders and revenue)
-- AOV trend (this week vs 4-week average)
+
+**Reference baselines (Shopify, March 2026):**
+- Total customer base: 17,997
+- AOV baseline: ~€833
+- Shopify customer segments available: Abandoned carts (30d), Email subscribers, From Spain, Non-buyers (0 orders), Repeat buyers (>1 order), Single-purchase buyers (≥1 order)
+- Primary market: Spain (ES)
+
+- New vs returning customer split (orders and revenue) — compare against Shopify "repeat buyer" vs "single purchase" segments
+- AOV trend (this week vs 4-week average vs €833 baseline)
 - Geographic distribution: top 5 regions/cities by orders
 - Customer acquisition cost (CAC) by channel
-- Repeat purchase rate trend
+- Repeat purchase rate trend — benchmark against Shopify "Clientes que han comprado más de una vez" segment
 
 ### g) Actionable Recommendations
 Always end the report with 3-5 specific, prioritized actions. Use this format:
@@ -189,15 +214,23 @@ Prioritize recommendations by expected impact (revenue potential or cost savings
    - Identify anomalies (any metric moving >20% week-over-week warrants investigation)
    - Cross-reference data: e.g., if Meta CTR drops, check if creative frequency is rising
 
-4. **Present**: Format summary in terminal using `formatWeeklySummary()`.
+4. **Advanced analysis**: Run the following modules from `src/analytics/`:
+   - `detectTrends()` from `trends.ts` — identify rising/falling/stable trends per metric
+   - `detectAnomalies()` from `anomalies.ts` — flag metrics deviating >2 stddev from historical mean
+   - `computeCorrelations()` from `correlations.ts` — find cross-channel metric correlations (requires 5+ periods)
+   - `computeProjections()` from `projections.ts` — project key metrics 2 and 4 weeks forward
+
+   Include results in the report under new sections: "Trends", "Anomalies", "Cross-Channel Correlations", "Projections (2w/4w)".
+
+5. **Present**: Format summary in terminal using `formatWeeklySummary()`.
    - Use tables for benchmark comparisons
    - Use color coding: green (on/above target), yellow (within 10% of target boundary), red (outside target)
    - Lead with the most important finding or change
 
-5. **Save insights**: Store report in `data/insights/` via `InsightsStore.save()` for use by other modules.
+6. **Save insights**: Store report in `data/insights/` via `InsightsStore.save()` for use by other modules.
    - See Insights Storage Enhancement below for required fields.
 
-6. **Optionally export**: If user requests, save as Markdown file.
+7. **Export**: Always save the report to `output/YYYY-MM-DD/analytics-{type}.md` using `saveOutput()` from `src/utils/exporter.ts`, in addition to saving raw data to `InsightsStore` (dual save).
 
 ## Attribution Guidance
 
