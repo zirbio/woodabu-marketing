@@ -6,11 +6,21 @@ export interface ChannelInsight {
   patterns: string[];
 }
 
+export interface PeriodMetrics {
+  period: string;
+  channel: string;
+  spend: number | null;
+  conversions: number | null;
+  sessions: number | null;
+  roas: number | null;
+}
+
 export interface InsightReport {
   date: string;
   type: 'weekly' | 'channel' | 'product' | 'compare';
   channels: Record<string, ChannelInsight>;
   recommendations: Array<{ action: string; target: string; reason: string }>;
+  metrics?: PeriodMetrics[];
 }
 
 const MAX_REPORTS = 12;
