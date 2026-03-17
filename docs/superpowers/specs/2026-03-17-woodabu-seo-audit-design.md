@@ -73,6 +73,7 @@ Full crawl of woodabu.com (< 500 URLs with 59 products + collections + blog). Id
 - Images without alt text
 - Orphan pages (no internal links pointing to them)
 - Shopify URL duplication (`/collections/X/products/Y` vs `/products/Y`) — verify canonical tags
+- Run a second crawl with Googlebot Mobile user-agent to detect mobile-first indexing issues (hidden content, different internal links, viewport/responsiveness problems)
 
 ### 3.2 Core Web Vitals
 
@@ -86,6 +87,8 @@ Run PageSpeed Insights on 5 key pages:
 
 **Targets:** LCP < 2.5s, INP < 200ms, CLS < 0.1
 
+Check CrUX data availability in Search Console (Core Web Vitals report). If field data exists, prioritize fixing any URLs in "Poor" or "Needs Improvement" buckets. If no field data is available (low traffic), lab data from PageSpeed Insights serves as proxy.
+
 Primary optimization vectors on Shopify: image weight/format (WebP), lazy loading, theme performance.
 
 ### 3.3 Schema Markup
@@ -93,7 +96,7 @@ Primary optimization vectors on Shopify: image weight/format (WebP), lazy loadin
 Already implemented: FurnitureStore, Organization, WebSite, BreadcrumbList.
 
 Missing (to verify and add):
-- **Product** schema with price, availability, and aggregateRating on each product page (enables rich snippets with stars)
+- **Product** schema with price and availability on each product page. For `aggregateRating`, a Shopify reviews app (Judge.me, Loox, or Stamped) is required to collect per-product reviews — the 300+ Google reviews live on GBP, not on product pages. Prerequisite: evaluate and install a reviews app before adding aggregateRating to avoid violating Google's structured data policies.
 - **BlogPosting** schema on each blog article
 - **FAQ** schema on the FAQ page
 - Validate all with Google Rich Results Test
@@ -158,7 +161,11 @@ Test each for 30 days, measure impressions + actions.
 - Photo plan: 3-5 quality photos/week (workshop, pieces, team, deliveries)
 - Consistency > volume
 
-**Deliverable:** Fully optimized GBP + 8-week post calendar + review response templates.
+### 4.7 NAP & Citation Audit
+
+Audit Name/Address/Phone consistency across all business listings: Google, Bing Places, Apple Maps, Yelp Spain, Páginas Amarillas, industry directories, social profiles (Instagram, Facebook, LinkedIn). Use Moz Local Check (free) or manual search. Fix any inconsistencies — NAP consistency is foundational for local pack ranking.
+
+**Deliverable:** Fully optimized GBP + 8-week post calendar + review response templates + NAP consistency report.
 
 ---
 
@@ -166,14 +173,16 @@ Test each for 30 days, measure impressions + actions.
 
 ### 5.1 Keyword Clusters
 
-| Cluster | Examples | Intent | Priority |
-|---|---|---|---|
-| Product core | "cabecero madera maciza", "mesa extensible madera" | Transactional | High |
-| Product + attribute | "muebles sostenibles España", "muebles artesanales madera" | Transactional | High |
-| Product + spec | "cabecero 150 madera", "mesa extensible 6 personas" | Transactional | High |
-| Informational/guide | "cómo elegir mesa extensible", "tipos de madera para muebles" | Informational (blog) | Medium |
-| Special collections | "muebles reciclados océano", "muebles zero waste" | Niche transactional | Medium |
-| Local | "muebles a medida Madrid", "ebanista Madrid" | Local (GBP + landing) | Medium-High |
+| Cluster | Examples | Intent | Priority | Est. Volume |
+|---|---|---|---|---|
+| Product core | "cabecero madera maciza", "mesa extensible madera" | Transactional | High | TBD — Phase 3 |
+| Product + attribute | "muebles sostenibles España", "muebles artesanales madera" | Transactional | High | TBD — Phase 3 |
+| Product + spec | "cabecero 150 madera", "mesa extensible 6 personas" | Transactional | High | TBD — Phase 3 |
+| Informational/guide | "cómo elegir mesa extensible", "tipos de madera para muebles" | Informational (blog) | Medium | TBD — Phase 3 |
+| Special collections | "muebles reciclados océano", "muebles zero waste" | Niche transactional | Medium | TBD — Phase 3 |
+| Local | "muebles a medida Madrid", "ebanista Madrid" | Local (GBP + landing) | Medium-High | TBD — Phase 3 |
+
+**Note:** The first deliverable of Phase 3 is populating the Est. Volume column with actual monthly search volume data from Ubersuggest/SE Ranking. This data drives cluster prioritization — without it, priorities are assumptions.
 
 ### 5.2 Search Console Analysis
 
@@ -194,8 +203,20 @@ For each of 59 product pages + collection pages:
 - **H1:** Single H1 with primary keyword
 - **Image alt text:** Descriptive with natural keyword
 - **Internal links:** Each product → 2-3 related products + relevant blog article
+- **Product description body:** 300-500 words for premium products at this AOV. Structure: key features, materials + certifications, dimensions, care instructions, sustainability story. Unique content per product (no duplicated boilerplate). Natural keyword integration. Reference `skills/woodabu-brand.md` for tone and the benefit hierarchy pyramid.
 
-**Deliverable:** Keyword research spreadsheet by cluster + on-page optimization doc with exact meta title/description copy for every page.
+### 5.5 Internal Linking Architecture
+
+Define a systematic linking model for the entire site:
+- **Pillar ↔ satellite:** Each pillar page links to all its satellites and vice versa
+- **Collection → products:** Each collection page links to all its products; each product links back to its collection
+- **Product → product:** Each product links to 2-3 related products (cross-sell/upsell)
+- **Blog → products:** Each blog article links to 2+ relevant products
+- **Blog → blog:** Each article links to 1+ related articles within the same topic cluster
+- **Target metric:** No page should be more than 3 clicks from the homepage
+- Identify and fix orphan pages found in the Screaming Frog crawl (Section 3.1)
+
+**Deliverable:** Keyword research spreadsheet by cluster + on-page optimization doc with exact meta title/description copy for every page + internal linking map.
 
 ---
 
@@ -227,7 +248,17 @@ Past mistake: 9 articles in one month, then nothing. Google rewards consistency.
 - **Monthly mix:** 1 SEO pillar/satellite + 1 brand/storytelling (workshop, processes, Kiko) + 1 seasonal/product + 1 general interest (decor, trends)
 - **Seasonal peaks in Spain:** September (back-to-routine, moving), January (sales, resolutions), Spring (renovation). Publish relevant content 6-8 weeks before peak.
 
-### 6.4 Differentiating Content
+### 6.4 Content Workflow
+
+1. **Brief creation:** Using keyword research from Phase 3, create a content brief per article (target keyword, secondary keywords, target word count, outline, internal links to include)
+2. **Draft writing:** AI-assisted via this repo's commands + `skills/woodabu-brand.md` for tone alignment, or human writer following the brief
+3. **Brand review:** Kiko or designated reviewer checks for accuracy, brand voice, and technical correctness
+4. **SEO check:** Apply per-article checklist (Section 6.6) before publishing
+5. **Publish on Shopify:** Schedule via Shopify blog editor
+
+Ownership of each step should be explicitly assigned before Phase 4 begins.
+
+### 6.5 Differentiating Content
 
 Assets competitors cannot replicate:
 - **Real artisan process** — step-by-step from log to delivery
@@ -235,7 +266,7 @@ Assets competitors cannot replicate:
 - **Cause-driven collections** — Pure Oceans (ghost fishing nets), Zero Waste (reclaimed wood) — viral + natural backlink potential
 - **Real data** — 300+ reviews, 17K customers, €833 AOV — transparency builds trust
 
-### 6.5 Per-Article SEO Checklist
+### 6.6 Per-Article SEO Checklist
 
 Every published article must have:
 - Clean URL with keyword (`/blogs/noticias/cabeceros-madera-maciza`)
@@ -264,6 +295,7 @@ Every published article must have:
 | Average position | Search Console | Biweekly |
 | Keywords in top 10 | Search Console / Ubersuggest | Monthly |
 | Conversions from organic | GA4 | Monthly |
+| Revenue from organic traffic | GA4 | Monthly |
 | GBP impressions | GBP Insights | Monthly |
 | GBP actions (calls, web, directions) | GBP Insights | Monthly |
 | Articles published | Blog | Weekly |
@@ -291,6 +323,8 @@ Every published article must have:
 - **Months 2-3:** Optimized product pages gaining positions, first blog articles indexed
 - **Months 4-6:** Topic clusters consolidating, organic traffic trending up, long-tail keywords entering top 10
 - **Months 6-12:** Topical authority established, competitive keywords climbing, organic as significant acquisition channel
+
+Quantitative targets will be set after Phase 1 baseline extraction (Section 7.1). Example targets to calibrate: +50% organic sessions at 6 months, 20+ keywords in top 10 at 6 months, organic revenue share reaching a meaningful % of total at 12 months.
 
 ---
 
