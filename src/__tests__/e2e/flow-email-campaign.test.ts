@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
-import { http, HttpResponse } from 'msw';
 
 import {
   server,
@@ -7,15 +6,11 @@ import {
 } from './helpers/msw-server.js';
 import { stubAllEnvVars } from './helpers/env-stub.js';
 import {
-  shopifyProductsResponse,
-  shopifySegmentsResponse,
-  shopifyEmailSuccessResponse,
-  shopifyEmailUserErrorResponse,
   emailProducts,
 } from './helpers/fixtures.js';
 
 import { loadConfig } from '../../utils/auth.js';
-import { ShopifyClient, type EmailDraftInput, type EmailDraftResult } from '../../apis/shopify.js';
+import { ShopifyClient } from '../../apis/shopify.js';
 import {
   generateEmailHtml,
   compileMjml,
@@ -24,13 +19,8 @@ import {
 } from '../../staging/html-preview.js';
 import {
   formatEmailSummary,
-  applyDecisions,
   type EmailSummaryInput,
-  type StagedItem,
-  type ReviewDecision,
 } from '../../staging/reviewer.js';
-
-const SHOPIFY_BASE = 'https://woodabu-test.myshopify.com/admin/api/2025-01/graphql.json';
 
 describe('Email Campaign — E2E', () => {
   beforeAll(() => {
@@ -146,36 +136,7 @@ describe('Email Campaign — E2E', () => {
       expect(summary).toContain('Descubre nuestros muebles artesanales');
     });
 
-    it('stages email and approves via review flow', () => {
-      const staged: StagedItem[] = [
-        { id: 'email1', content: 'Novedades Woodabu — Repeat buyers segment' },
-      ];
-
-      const decisions: ReviewDecision[] = [
-        { id: 'email1', action: 'approve' },
-      ];
-
-      const result = applyDecisions(staged, decisions);
-      expect(result).toHaveLength(1);
-      expect(result[0].content).toContain('Novedades Woodabu');
-    });
-
-    it('creates email draft via Shopify', async () => {
-      const config = loadConfig();
-      const shopifyClient = new ShopifyClient(config.shopify);
-
-      const emailInput: EmailDraftInput = {
-        subject: 'Novedades Woodabu',
-        body: '<html><body>Email content</body></html>',
-      };
-
-      const result = await shopifyClient.createEmailDraft(emailInput);
-      expect(result.campaignId).toBe('gid://shopify/EmailCampaign/e2e_1');
-      expect(result.fallback).toBe(false);
-      expect(result.error).toBeUndefined();
-    });
-
-    it('FULL PIPELINE: segments -> products -> MJML -> HTML -> summary -> stage -> approve -> create draft', async () => {
+    it('FULL PIPELINE: segments -> products -> MJML -> HTML -> summary', async () => {
       const config = loadConfig();
       const shopifyClient = new ShopifyClient(config.shopify);
 
@@ -218,95 +179,6 @@ describe('Email Campaign — E2E', () => {
         preheader: 'Descubre nuestros muebles artesanales',
       });
       expect(summary).toContain(targetSegment.name);
-
-      // 6. Stage and approve
-      const staged: StagedItem[] = [{ id: 'email_pipeline', content: emailHtml.subject }];
-      const decisions: ReviewDecision[] = [{ id: 'email_pipeline', action: 'approve' }];
-      const approved = applyDecisions(staged, decisions);
-      expect(approved).toHaveLength(1);
-
-      // 7. Create draft via Shopify
-      const draftResult = await shopifyClient.createEmailDraft({
-        subject: emailHtml.subject,
-        body: emailHtml.html,
-      });
-      expect(draftResult.campaignId).toBeDefined();
-      expect(draftResult.fallback).toBe(false);
-    });
-  });
-
-  describe('email creation fallback', () => {
-    it('userErrors trigger fallback with error message', async () => {
-      server.use(
-        http.post(SHOPIFY_BASE, async ({ request }) => {
-          const body = await request.text();
-          if (body.includes('emailMarketingCampaignCreate')) {
-            return HttpResponse.json(shopifyEmailUserErrorResponse);
-          }
-          return HttpResponse.json(shopifyProductsResponse);
-        }),
-      );
-
-      const config = loadConfig();
-      const shopifyClient = new ShopifyClient(config.shopify);
-      const result = await shopifyClient.createEmailDraft({
-        subject: 'Test',
-        body: '<html>test</html>',
-      });
-
-      expect(result.fallback).toBe(true);
-      expect(result.campaignId).toBeNull();
-      expect(result.error).toContain('Feature not available');
-    });
-
-    it('API unreachable triggers fallback', async () => {
-      server.use(
-        http.post(SHOPIFY_BASE, async ({ request }) => {
-          const body = await request.text();
-          if (body.includes('emailMarketingCampaignCreate')) {
-            return HttpResponse.json(
-              { errors: [{ message: 'Service unavailable' }] },
-              { status: 503 },
-            );
-          }
-          return HttpResponse.json(shopifyProductsResponse);
-        }),
-      );
-
-      const config = loadConfig();
-      const shopifyClient = new ShopifyClient(config.shopify);
-      const result = await shopifyClient.createEmailDraft({
-        subject: 'Test',
-        body: '<html>test</html>',
-      });
-
-      // The catch block in createEmailDraft catches the thrown error and returns fallback
-      expect(result.fallback).toBe(true);
-      expect(result.campaignId).toBeNull();
-      expect(result.error).toBe('Email API unavailable');
-    });
-
-    it('network error triggers fallback', async () => {
-      server.use(
-        http.post(SHOPIFY_BASE, async ({ request }) => {
-          const body = await request.text();
-          if (body.includes('emailMarketingCampaignCreate')) {
-            return HttpResponse.error();
-          }
-          return HttpResponse.json(shopifyProductsResponse);
-        }),
-      );
-
-      const config = loadConfig();
-      const shopifyClient = new ShopifyClient(config.shopify);
-      const result = await shopifyClient.createEmailDraft({
-        subject: 'Test',
-        body: '<html>test</html>',
-      });
-
-      expect(result.fallback).toBe(true);
-      expect(result.campaignId).toBeNull();
-      expect(result.error).toBe('Email API unavailable');
     });
   });
 

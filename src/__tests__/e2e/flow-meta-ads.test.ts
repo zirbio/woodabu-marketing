@@ -9,18 +9,14 @@ import { stubAllEnvVars, stubExpiredToken, stubWarningToken } from './helpers/en
 import {
   metaInsightsResponse,
   metaInsightsEmptyResponse,
-  metaCreateAdResponse,
   shopifyProductsResponse,
 } from './helpers/fixtures.js';
 
 import { loadConfig, checkMetaTokenExpiry, type TokenExpiryCheck } from '../../utils/auth.js';
-import { MetaClient, type AdInsight, type CreateAdInput } from '../../apis/meta.js';
+import { MetaClient, type AdInsight } from '../../apis/meta.js';
 import { ShopifyClient } from '../../apis/shopify.js';
 import {
   formatAdTable,
-  applyDecisions,
-  type StagedItem,
-  type ReviewDecision,
 } from '../../staging/reviewer.js';
 
 const META_BASE = 'https://graph.facebook.com/v19.0';
@@ -123,39 +119,6 @@ describe('Meta Ads — E2E', () => {
       expect(products[0].title).toBe('Mesa Roble Macizo');
     });
 
-    it('creates 4 ad drafts in PAUSED state', async () => {
-      let callCount = 0;
-      let capturedStatuses: string[] = [];
-
-      server.use(
-        http.post(`${META_BASE}/:accountId/ads`, async ({ request }) => {
-          const body = await request.json() as Record<string, unknown>;
-          capturedStatuses.push(body.status as string);
-          callCount++;
-          return HttpResponse.json({ id: `ad_draft_${callCount}` });
-        }),
-      );
-
-      const config = loadConfig();
-      const metaClient = new MetaClient(config.meta);
-
-      const drafts: Array<{ adId: string }> = [];
-      for (let i = 0; i < 4; i++) {
-        const draft = await metaClient.createAdDraft({
-          campaignId: 'c1',
-          primaryText: `Primary text ${i}`,
-          headline: `Headline ${i}`,
-          description: `Description ${i}`,
-        });
-        drafts.push(draft);
-      }
-
-      expect(drafts).toHaveLength(4);
-      expect(capturedStatuses.every((s) => s === 'PAUSED')).toBe(true);
-      expect(drafts[0].adId).toBe('ad_draft_1');
-      expect(drafts[3].adId).toBe('ad_draft_4');
-    });
-
     it('formats review tables for Meta ad headlines', () => {
       const headlines = ['Mesa artesanal', 'Madera sostenible', 'Diseño español'];
       const table = formatAdTable(headlines, 'headline');
@@ -166,28 +129,7 @@ describe('Meta Ads — E2E', () => {
       }
     });
 
-    it('applies mixed review decisions to Meta ad drafts', () => {
-      const staged: StagedItem[] = [
-        { id: 'draft1', content: 'Primary text for spring sale' },
-        { id: 'draft2', content: 'Primary text for summer promo' },
-        { id: 'draft3', content: 'Primary text for brand awareness' },
-        { id: 'draft4', content: 'Primary text for retargeting' },
-      ];
-
-      const decisions: ReviewDecision[] = [
-        { id: 'draft1', action: 'approve' },
-        { id: 'draft2', action: 'edit', newContent: 'Updated summer text' },
-        { id: 'draft3', action: 'skip' },
-        { id: 'draft4', action: 'approve' },
-      ];
-
-      const result = applyDecisions(staged, decisions);
-      expect(result).toHaveLength(3);
-      expect(result.find((r) => r.id === 'draft2')?.content).toBe('Updated summer text');
-      expect(result.find((r) => r.id === 'draft3')).toBeUndefined();
-    });
-
-    it('FULL PIPELINE: check token -> fetch insights -> fetch products -> create drafts -> review', async () => {
+    it('FULL PIPELINE: check token -> fetch insights -> fetch products -> review', async () => {
       const config = loadConfig();
 
       // 1. Token check
@@ -203,22 +145,6 @@ describe('Meta Ads — E2E', () => {
       const shopifyClient = new ShopifyClient(config.shopify);
       const products = await shopifyClient.getProducts();
       expect(products.length).toBeGreaterThan(0);
-
-      // 4. Create ad drafts (PAUSED)
-      const topCampaign = insights[0];
-      const draft = await metaClient.createAdDraft({
-        campaignId: topCampaign.campaignId,
-        primaryText: `Descubre ${products[0].title} desde ${products[0].price}`,
-        headline: products[0].title.slice(0, 30),
-        description: products[0].description.slice(0, 90),
-      });
-      expect(draft.adId).toBeDefined();
-
-      // 5. Stage and review
-      const staged: StagedItem[] = [{ id: draft.adId, content: products[0].title }];
-      const decisions: ReviewDecision[] = [{ id: draft.adId, action: 'approve' }];
-      const approved = applyDecisions(staged, decisions);
-      expect(approved).toHaveLength(1);
     });
   });
 
@@ -262,23 +188,5 @@ describe('Meta Ads — E2E', () => {
       expect(insights).toEqual([]);
     });
 
-    it('createAdDraft throws on server error', async () => {
-      server.use(
-        http.post(`${META_BASE}/:accountId/ads`, () =>
-          HttpResponse.json({ error: 'Internal' }, { status: 500 }),
-        ),
-      );
-
-      const config = loadConfig();
-      const metaClient = new MetaClient(config.meta);
-      await expect(
-        metaClient.createAdDraft({
-          campaignId: 'c1',
-          primaryText: 'text',
-          headline: 'head',
-          description: 'desc',
-        }),
-      ).rejects.toThrow('500');
-    });
   });
 });

@@ -3,13 +3,10 @@ import { setupServer } from 'msw/node';
 import { vi } from 'vitest';
 import {
   metaInsightsResponse,
-  metaCreateAdResponse,
-  metaSchedulePostResponse,
   metaPageInsightsResponse,
   shopifyProductsResponse,
   shopifyOrdersResponse,
   shopifySegmentsResponse,
-  shopifyEmailSuccessResponse,
   ga4TrafficResponse,
   googleAdsPerformanceRows,
   googleAdsMutateResponse,
@@ -23,12 +20,6 @@ const defaultHandlers = [
   http.get(`${META_BASE}/:accountId/insights`, () =>
     HttpResponse.json(metaInsightsResponse),
   ),
-  http.post(`${META_BASE}/:accountId/ads`, () =>
-    HttpResponse.json(metaCreateAdResponse),
-  ),
-  http.post(`${META_BASE}/:pageId/feed`, () =>
-    HttpResponse.json(metaSchedulePostResponse),
-  ),
   http.get(`${META_BASE}/:pageId/insights`, () =>
     HttpResponse.json(metaPageInsightsResponse),
   ),
@@ -36,9 +27,6 @@ const defaultHandlers = [
   // Shopify handler — routes based on query content
   http.post(SHOPIFY_BASE, async ({ request }) => {
     const body = await request.text();
-    if (body.includes('emailMarketingCampaignCreate')) {
-      return HttpResponse.json(shopifyEmailSuccessResponse);
-    }
     if (body.includes('segments')) {
       return HttpResponse.json({
         data: {

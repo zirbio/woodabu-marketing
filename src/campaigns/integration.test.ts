@@ -1,8 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseCampaignString } from './parser.js';
 import { loadCampaign, formatCampaignPreview } from './loader.js';
-import { applyDecisions } from '../staging/reviewer.js';
-import type { ReviewDecision } from '../staging/reviewer.js';
 
 describe('Campaign YAML → Staging flow integration', () => {
   const campaignYaml = `
@@ -68,17 +66,6 @@ ads:
     expect(loaded.stagedAds[0].content).toContain('Titular uno');
     expect(loaded.stagedAds[1].content).toContain('Titular dos');
     expect(loaded.stagedAds[2].content).toContain('Titular tres');
-
-    // Step 5: Apply decisions (approve first, skip second, edit third)
-    const decisions: ReviewDecision[] = [
-      { id: loaded.stagedAds[0].id, action: 'approve' },
-      { id: loaded.stagedAds[1].id, action: 'skip' },
-      { id: loaded.stagedAds[2].id, action: 'edit', newContent: 'Edited: Titular tres actualizado' },
-    ];
-    const approved = applyDecisions(loaded.stagedAds, decisions);
-    expect(approved).toHaveLength(2);
-    expect(approved[0].content).toContain('Titular uno');
-    expect(approved[1].content).toContain('Edited: Titular tres actualizado');
   });
 
   it('rejects invalid YAML before reaching loader', () => {

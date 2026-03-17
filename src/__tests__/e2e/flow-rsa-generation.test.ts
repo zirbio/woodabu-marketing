@@ -44,9 +44,6 @@ import {
 } from '../../utils/validators.js';
 import {
   formatAdTable,
-  applyDecisions,
-  type StagedItem,
-  type ReviewDecision,
 } from '../../staging/reviewer.js';
 
 describe('RSA Generation — E2E', () => {
@@ -131,45 +128,7 @@ describe('RSA Generation — E2E', () => {
       }
     });
 
-    it('stages items and applies mixed decisions', () => {
-      const staged: StagedItem[] = [
-        { id: 'h1', content: 'Muebles hechos a mano' },
-        { id: 'h2', content: 'Madera maciza sostenible' },
-        { id: 'h3', content: 'Diseño español único' },
-        { id: 'h4', content: 'Envío gratis península' },
-      ];
-
-      const decisions: ReviewDecision[] = [
-        { id: 'h1', action: 'approve' },
-        { id: 'h2', action: 'edit', newContent: 'Madera maciza FSC' },
-        { id: 'h3', action: 'skip' },
-        { id: 'h4', action: 'approve' },
-      ];
-
-      const result = applyDecisions(staged, decisions);
-      expect(result).toHaveLength(3);
-      expect(result.find((r) => r.id === 'h1')?.content).toBe('Muebles hechos a mano');
-      expect(result.find((r) => r.id === 'h2')?.content).toBe('Madera maciza FSC');
-      expect(result.find((r) => r.id === 'h3')).toBeUndefined();
-      expect(result.find((r) => r.id === 'h4')?.content).toBe('Envío gratis península');
-    });
-
-    it('creates RSA ad in PAUSED state via Google Ads', async () => {
-      const config = loadConfig();
-      const client = new GoogleAdsClient(config.googleAds);
-      const result = await client.createRsaAd({
-        adGroupId: 'ag_1',
-        headlines: validHeadlines15,
-        descriptions: validDescriptions4,
-      });
-
-      expect(result.resourceName).toBe('customers/123/adGroupAds/e2e_456');
-      expect(googleAdsMutateMock).toHaveBeenCalledTimes(1);
-      const callArgs = googleAdsMutateMock.mock.calls[0][0];
-      expect(callArgs[0].status).toBe('PAUSED');
-    });
-
-    it('FULL PIPELINE: fetch perf -> rank -> validate -> format -> stage -> review -> create', async () => {
+    it('FULL PIPELINE: fetch perf -> rank -> validate -> format', async () => {
       const config = loadConfig();
 
       // 1. Fetch performance
@@ -178,7 +137,7 @@ describe('RSA Generation — E2E', () => {
       expect(ads.length).toBeGreaterThan(0);
 
       // 2. Rank
-      const { top, bottom } = GoogleAdsClient.rankPerformers(ads);
+      const { top } = GoogleAdsClient.rankPerformers(ads);
       expect(top.length).toBeGreaterThan(0);
 
       // 3. Fetch products for copy inspiration
@@ -195,28 +154,6 @@ describe('RSA Generation — E2E', () => {
       const descTable = formatAdTable(validDescriptions4, 'description');
       expect(headlineTable).toContain('OK');
       expect(descTable).toContain('OK');
-
-      // 6. Stage items
-      const stagedHeadlines: StagedItem[] = validHeadlines15.map((h, i) => ({
-        id: `h${i}`,
-        content: h,
-      }));
-      const decisions: ReviewDecision[] = stagedHeadlines.map((s) => ({
-        id: s.id,
-        action: 'approve' as const,
-      }));
-
-      // 7. Apply decisions
-      const approved = applyDecisions(stagedHeadlines, decisions);
-      expect(approved).toHaveLength(15);
-
-      // 8. Create ad
-      const result = await gadsClient.createRsaAd({
-        adGroupId: 'ag_1',
-        headlines: approved.map((a) => a.content),
-        descriptions: validDescriptions4,
-      });
-      expect(result.resourceName).toContain('customers/');
     });
   });
 
